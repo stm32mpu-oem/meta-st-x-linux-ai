@@ -17,12 +17,15 @@ PACKAGES = "\
     packagegroup-x-linux-ai-onnxruntime      \
 "
 
+PACKAGES:append:stm32mp25common = " packagegroup-x-linux-ai-npu"
+
 # Manage to provide all framework tools base packages with overall one
 RDEPENDS:packagegroup-x-linux-ai = "\
     packagegroup-x-linux-ai-tflite           \
     packagegroup-x-linux-ai-tflite-edgetpu   \
     packagegroup-x-linux-ai-onnxruntime      \
 "
+RDEPENDS:packagegroup-x-linux-ai:append:stm32mp25common = " packagegroup-x-linux-ai-npu"
 
 SUMMARY:packagegroup-x-linux-ai-tflite = "X-LINUX-AI TensorFlow Lite components"
 RDEPENDS:packagegroup-x-linux-ai-tflite = "\
@@ -34,6 +37,11 @@ RDEPENDS:packagegroup-x-linux-ai-tflite = "\
     tflite-cv-apps-image-classification-python \
     tflite-cv-apps-object-detection-c++ \
     tflite-cv-apps-object-detection-python \
+"
+
+RDEPENDS:packagegroup-x-linux-ai-tflite:append:stm32mp25common = "\
+    tim-vx \
+    tflite-vx-delegate \
 "
 
 SUMMARY:packagegroup-x-linux-ai-tflite-edgetpu = "X-LINUX-AI TensorFlow Lite Edge TPU components"
@@ -64,3 +72,8 @@ RDEPENDS:packagegroup-x-linux-ai-onnxruntime = "\
     onnx-cv-apps-object-detection-c++ \
 "
 
+SUMMARY:packagegroup-x-linux-ai-npu = "X-LINUX-AI minimum NPU components"
+RDEPENDS:packagegroup-x-linux-ai-npu += "\
+    tim-vx \
+    tim-vx-tools \
+"
