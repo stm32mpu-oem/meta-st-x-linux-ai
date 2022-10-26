@@ -44,6 +44,7 @@ Gtk.init_check(None)
 #path definition
 LIBTPU_STD_PATH = "/usr/lib/libedgetpu-std.so.2"
 LIBTPU_MAX_PATH = "/usr/lib/libedgetpu-max.so.2"
+LIBVX_PATH = "/usr/lib/libvx_delegate.so.2"
 RESOURCES_DIRECTORY = os.path.abspath(os.path.dirname(__file__)) + "/resources/"
 
 class NeuralNetwork:
@@ -51,7 +52,7 @@ class NeuralNetwork:
     Class that handles Neural Network inference
     """
 
-    def __init__(self, model_file, label_file, input_mean, input_std, edgetpu, perf, ext_delegate, maximum_detection):
+    def __init__(self, model_file, label_file, input_mean, input_std, edgetpu, perf, ext_delegate, maximum_detection, npu):
         """
         :param model_path: .tflite model to be executed
         :param label_file:  name of file containing labels
@@ -86,8 +87,12 @@ class NeuralNetwork:
         self.nn_result_classes = np.reshape(np.zeros(args.maximum_detection), (1, 10))
         self.nn_result_scores = np.reshape(np.zeros(args.maximum_detection), (1, 10))
 
-
-        if edgetpu is True:
+        if npu is True:
+            if path.exists(LIBVX_PATH) :
+                self._selected_delegate = LIBVX_PATH
+            else :
+                print("No delegate ",LIBVX_PATH, " found fall back on CPU mode")             
+        elif edgetpu is True:
             #Check if the Edge TPU is connected
             edge_tpu = False
             device_re = re.compile(".+?ID\s(?P<id>\w+)", re.I)
@@ -130,6 +135,7 @@ class NeuralNetwork:
                                                  experimental_delegates=[tflr.load_delegate(self._selected_delegate)])
         else :
             print("no delegate to use, CPU mode activated")
+            print("number of threads used in tflite interpreter : ",self.number_threads)
             self._interpreter = tflr.Interpreter(model_path=self._model_file,
                                                  num_threads = self.number_threads)
 
@@ -902,7 +908,7 @@ class Application:
         self.valid_draw_count = 0
 
         #instantiate the Neural Network class
-        self.nn = NeuralNetwork(args.model_file, args.label_file, float(args.input_mean), float(args.input_std), args.edgetpu, args.perf, args.ext_delegate, args.maximum_detection)
+        self.nn = NeuralNetwork(args.model_file, args.label_file, float(args.input_mean), float(args.input_std), args.edgetpu, args.perf, args.ext_delegate, args.maximum_detection, args.npu)
         self.shape = self.nn.get_img_size()
         self.nn_input_width = self.shape[1]
         self.nn_input_height = self.shape[0]
@@ -1131,7 +1137,7 @@ class Application:
             if args.validation and inference_time != 0:
                 # reload the timeout
                 GLib.source_remove(self.valid_timeout_id)
-                self.valid_timeout_id = GLib.timeout_add(10000,
+                self.valid_timeout_id = GLib.timeout_add(100000,
                                                          self.valid_timeout_callback)
 
                 #  get file path without extension
@@ -1203,7 +1209,7 @@ class Application:
                 # store the inference time in a list so that we can compute the
                 # average later on
                 if self.first_call :
-                    #skip first inference time to avoid warmup time in EdgeTPU mode
+                    #skip first inference time to avoid warmup time in NPU and EdgeTPU mode
                     self.first_call = False
                 else :
                     self.valid_inference_time.append(round(self.nn_inference_time * 1000, 4))
@@ -1258,6 +1264,7 @@ if __name__ == '__main__':
     parser.add_argument("-e", "--ext_delegate",default = None, help="external_delegate_library path")
     parser.add_argument("-p", "--perf", default='std', choices= ['std', 'max'], help="[EdgeTPU ONLY] Select the performance of the Coral EdgeTPU")
     parser.add_argument("--edgetpu", action='store_true', help="enable Coral EdgeTPU acceleration")
+    parser.add_argument("--npu", action='store_true', help="enable NPU acceleration")
     parser.add_argument("--input_mean", default=127.5, help="input mean")
     parser.add_argument("--input_std", default=127.5, help="input standard deviation")
     parser.add_argument("--validation", action='store_true', help="enable the validation mode")
