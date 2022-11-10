@@ -68,6 +68,7 @@ EXTRA_OECMAKE += "    -DCMAKE_BUILD_TYPE=Release \
 
 ONNX_TARGET_ARCH:armv7ve="${@bb.utils.contains('TUNE_FEATURES', 'cortexa7', 'armv7ve', '', d)}"
 ONNX_TARGET_ARCH:armv7a="${@bb.utils.contains('TUNE_FEATURES', 'cortexa7', 'armv7a', '', d)}"
+ONNX_TARGET_ARCH:aarch64="${@bb.utils.contains('TUNE_FEATURES', 'cortexa35', 'aarch64', '', d)}"
 
 do_generate_toolchain_file:append() {
 	echo "set( CMAKE_SYSTEM_PROCESSOR ${ONNX_TARGET_ARCH} )" >> ${WORKDIR}/toolchain.cmake
