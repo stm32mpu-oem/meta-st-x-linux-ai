@@ -1244,7 +1244,7 @@ class Application:
         # start a timeout timer in validation process to close application if
         # timeout occurs
         if args.validation:
-            self.valid_timeout_id = GLib.timeout_add(35000,
+            self.valid_timeout_id = GLib.timeout_add(100000,
                                                      self.valid_timeout_callback)
         return True
 

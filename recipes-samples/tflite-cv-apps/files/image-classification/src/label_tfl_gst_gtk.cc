@@ -728,17 +728,17 @@ static gboolean gui_draw_overlay_cb(GtkWidget *widget,
 		if (data->preview_enabled) {
 			if (data->valid_draw_count < 5){
 				g_source_remove(data->valid_timeout_id);
-				data->valid_timeout_id = g_timeout_add(10000,
-							valid_timeout_callback,
-							 NULL);
+				data->valid_timeout_id = g_timeout_add(100000,
+													   valid_timeout_callback,
+													   NULL);
 				data->valid_draw_count++;
 			} else {
 				data->valid_inference_time.push_back(results.inference_time);
 				/* Reload the timeout */
 				g_source_remove(data->valid_timeout_id);
-				data->valid_timeout_id = g_timeout_add(10000,
-									valid_timeout_callback,
-									 NULL);
+				data->valid_timeout_id = g_timeout_add(100000,
+													   valid_timeout_callback,
+													   NULL);
 				data->valid_draw_count++;
 				if (data->valid_draw_count > data->val_run) {
 					auto avg_inf_time = std::accumulate(data->valid_inference_time.begin(),
@@ -1316,7 +1316,7 @@ static void print_help(int argc, char** argv)
 #ifdef EDGETPU
 #define OPT_EDGETPU      1007
 #endif
-#define OPT_NPU          1008
+#define OPT_NPU          1009
 void process_args(int argc, char** argv)
 {
 	const char* const short_opts = "m:l:i:v:c:e:n:h";
@@ -1613,7 +1613,7 @@ int main(int argc, char *argv[])
 	 * timeout occurs */
 	if (validation) {
 		data.valid_draw_count = 0;
-		data.valid_timeout_id = g_timeout_add(10000,
+		data.valid_timeout_id = g_timeout_add(100000,
 						      valid_timeout_callback,
 						      NULL);
 	}
