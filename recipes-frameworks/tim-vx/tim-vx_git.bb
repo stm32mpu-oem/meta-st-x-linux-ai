@@ -7,10 +7,10 @@ LICENSE = "MIT"
 
 LIC_FILES_CHKSUM = "file://LICENSE;md5=ededf2503f5d147ae718276dfd28801f"
 
-PV = "1.1.37+git${SRCPV}"
+PV = "1.1.57+git${SRCPV}"
 
 SRCBRANCH = "main"
-SRCREV = "161bb8a7c4ab6a84b28cecce08a71804ca60786a"
+SRCREV = "0e211c8efdf412a7d09629aa0452d9356e6d113b"
 SRC_URI ="git://github.com/VeriSilicon/TIM-VX.git;branch=${SRCBRANCH};protocol=https"
 
 S = "${WORKDIR}/git"
@@ -70,8 +70,8 @@ do_install() {
     ln -sf libtim-vx.so.${PVB} ${D}${libdir}/libtim-vx.so
 
     # Install other libraries for benchmark
-    install -m 0755 ${WORKDIR}/build/lib/libgtest_main.so ${D}${libdir}/libgtest_main.so
-    install -m 0755 ${WORKDIR}/build/lib/libgtest.so      ${D}${libdir}/libgtest.so
+    install -m 0755 ${WORKDIR}/build/lib/libgtest_main.so ${D}${libdir}/libgtest_main.so.1.11.0
+    install -m 0755 ${WORKDIR}/build/lib/libgtest.so      ${D}${libdir}/libgtest.so.1.11.0
     install -m 0755 ${WORKDIR}/build/lib/libgmock_main.so ${D}${libdir}/libgmock_main.so
     install -m 0755 ${WORKDIR}/build/lib/libgmock.so      ${D}${libdir}/libgmock.so
     install -m 0755 ${WORKDIR}/build/src/tim/unit_test    ${D}/usr/local/bin/${PN}-${PVB}/TIM-VX_test
@@ -87,8 +87,8 @@ FILES_SOLIBSDEV = ""
 
 FILES:${PN}-tools = "   /usr/local/bin/${PN}-${PVB}/TIM-VX_test \
 			 /usr/local/bin/${PN}-${PVB}/cl_viv_vx_ext.h \
-			 ${libdir}/libgtest_main.so \
-			 ${libdir}/libgtest.so \
+			 ${libdir}/libgtest_main.so.1.11.0 \
+			 ${libdir}/libgtest.so.1.11.0 \
 			 ${libdir}/libgmock_main.so \
 			 ${libdir}/libgmock.so \
 "
