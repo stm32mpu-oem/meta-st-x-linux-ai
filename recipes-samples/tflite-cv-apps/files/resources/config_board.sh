@@ -4,6 +4,7 @@ COMPATIBLE=$(cat /proc/device-tree/compatible)
 STM32MP135="stm32mp135"
 STM32MP157="stm32mp157"
 STM32MP157FEV1="stm32mp157f-ev1st"
+STM32MP257="stm32mp257"
 
 if [[ "$COMPATIBLE" == *"$STM32MP135"* ]]; then
   MACHINE=$STM32MP135
@@ -27,6 +28,14 @@ if [[ "$COMPATIBLE" == *"$STM32MP157"* ]]; then
     DFPS=15
     COMPUTE_ENGINE=""
   fi
+fi
+
+if [[ "$COMPATIBLE" == *"$STM32MP257"* ]]; then
+  MACHINE=$STM32MP257
+  DWIDTH=640
+  DHEIGHT=480
+  DFPS=15
+  COMPUTE_ENGINE="--npu"
 fi
 
 echo "machine used = "$MACHINE
