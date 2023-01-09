@@ -4,17 +4,17 @@ LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=7d6260e4f3f6f85de05af9c8f87e6fb5"
 
 SRCBRANCH_vx = "main"
-SRCREV_vx = "e691bb06246050290b33c12f9c34a89ea0401ac9"
+SRCREV_vx = "a40501a088c2516c7e380585c7991406c140991b"
 
-SRCBRANCH_tf = "r2.8"
-SRCREV_tf = "e994fb9c3ad250d38fd07511aaa445eda728f9af"
+SRCBRANCH_tf = "r2.10"
+SRCREV_tf = "fdfc646704c37bdf450525f6ced9d80df86e4993"
 
 SRC_URI = "git://github.com/VeriSilicon/tflite-vx-delegate.git;branch=${SRCBRANCH_vx};name=vx;destsuffix=git_vx/;protocol=https \
            git://github.com/tensorflow/tensorflow.git;branch=${SRCBRANCH_tf};name=tf;destsuffix=git_tf/;protocol=https "
 
-PV = "2.8.0+git${SRCREV_vx}"
+PV = "2.10.0+git${SRCREV_vx}"
 S = "${WORKDIR}/git_vx"
-COMPATIBLE_MACHINE = "stm32mp25common"
+COMPATIBLE_MACHINE = "stm32mp2common"
 
 inherit cmake
 DEPENDS += "tim-vx patchelf-native"
@@ -41,6 +41,7 @@ do_configure:prepend() {
         export HTTPS_PROXY=${https_proxy}
         export https_proxy=${https_proxy}
     fi
+    unset FC
 }
 
 EXTRA_OECMAKE += " -DFETCHCONTENT_SOURCE_DIR_TENSORFLOW=${WORKDIR}/git_tf \
