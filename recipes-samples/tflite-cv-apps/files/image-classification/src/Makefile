@@ -11,7 +11,7 @@ CXXFLAGS += -I$(SYSROOT)/usr/include/tensorflow/lite/abseil-cpp
 
 LDFLAGS  = $(shell pkg-config --libs gtk+-3.0 gstreamer-plugins-base-1.0 gstreamer-wayland-1.0)
 LDFLAGS += -lpthread -ldl -lopencv_core -lopencv_imgproc -lopencv_imgcodecs -ltensorflow-lite
-ifneq (,$(findstring stm32mp2,$(ARCHITECTURE)))
+ifneq (,$(findstring stm32mp2_npu,$(ARCHITECTURE)))
 	CXXFLAGS += -DVSI_OP
 	LDFLAGS += -lvx_custom_op
 endif

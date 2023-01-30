@@ -15,7 +15,7 @@ SRC_URI ="git://github.com/VeriSilicon/TIM-VX.git;branch=${SRCBRANCH};protocol=h
 
 S = "${WORKDIR}/git"
 
-# Only compatible with stm32mp2
+# Only compatible with stm32mp25
 COMPATIBLE_MACHINE = "stm32mp25common"
 
 python () {

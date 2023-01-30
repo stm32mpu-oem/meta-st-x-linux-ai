@@ -7,7 +7,7 @@ LIC_FILES_CHKSUM += "file://${COMMON_LICENSE_DIR}/Apache-2.0;md5=89aea4e17d99a7c
 inherit pkgconfig
 
 DEPENDS += "tensorflow-lite gtk+3 opencv gstreamer1.0 rapidjson gstreamer1.0-plugins-base gstreamer1.0-plugins-bad"
-DEPENDS:append:stm32mp2common = " tflite-vx-delegate "
+DEPENDS:append:stm32mp25common = " tflite-vx-delegate "
 
 SRC_URI  = " file://object-detection/src/111-tflite-object-detection-C++.yaml;subdir=${BPN}-${PV} "
 SRC_URI += " file://object-detection/src/objdetect_tfl_gst_gtk.cc;subdir=${BPN}-${PV} "
@@ -34,7 +34,7 @@ S = "${WORKDIR}/${BPN}-${PV}"
 do_configure[noexec] = "1"
 
 BOARD_USED:stm32mp1common = "stm32mp1"
-BOARD_USED:stm32mp2common = "stm32mp2"
+BOARD_USED:stm32mp25common = "stm32mp2_npu"
 
 EXTRA_OEMAKE  = 'SYSROOT="${RECIPE_SYSROOT}"'
 EXTRA_OEMAKE += 'ARCHITECTURE="${BOARD_USED}"'
@@ -92,4 +92,4 @@ RDEPENDS:${PN} += " \
 
 #Depending of the Gstreamer version supported by the Yocto version the RDEPENDS differs
 RDEPENDS:${PN} += "${@bb.utils.contains('DISTRO_CODENAME', 'kirkstone', ' gstreamer1.0-plugins-base-videoscale gstreamer1.0-plugins-base-videoconvert ', ' gstreamer1.0-plugins-base-videoconvertscale ',  d)}"
-RDEPENDS:${PN}:append:stm32mp2common = " tflite-vx-delegate "
+RDEPENDS:${PN}:append:stm32mp25common = " tflite-vx-delegate "

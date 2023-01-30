@@ -47,9 +47,6 @@ do_compile() {
     oe_runmake OPENCV_PKGCONFIG=${OPENCV_VERSION} -C ${S}/object-detection/src
 }
 
-BOARD_USED:stm32mp1common = "stm32mp1"
-BOARD_USED:stm32mp2common = "stm32mp2"
-
 do_install() {
     install -d ${D}${prefix}/local/demo/
     install -d ${D}${prefix}/local/demo/application
