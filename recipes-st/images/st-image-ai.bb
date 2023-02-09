@@ -5,6 +5,9 @@ SUMMARY = "OpenSTLinux Artificial Inteligence for Computer Vision image based on
 # Define a proper userfs for st-image-ai
 STM32MP_USERFS_IMAGE = "st-image-ai-userfs"
 
+# Define a proper vendorfs for st-image-ai
+STM32MP_VENDORFS_IMAGE = "st-image-ai-vendorfs"
+
 # Define ROOTFS_MAXSIZE to 1.5GB
 IMAGE_ROOTFS_MAXSIZE = "1572864"
 # Define the size of userfs
