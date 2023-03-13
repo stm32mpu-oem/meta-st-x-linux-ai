@@ -42,6 +42,7 @@ RDEPENDS:packagegroup-x-linux-ai-tflite = "\
 RDEPENDS:packagegroup-x-linux-ai-tflite:append:stm32mp25common = "\
     tim-vx \
     tflite-vx-delegate \
+    tflite-cv-apps-pose-estimation-python \
 "
 
 SUMMARY:packagegroup-x-linux-ai-tflite-edgetpu = "X-LINUX-AI TensorFlow Lite Edge TPU components"
