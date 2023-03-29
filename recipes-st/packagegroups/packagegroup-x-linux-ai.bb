@@ -78,4 +78,5 @@ SUMMARY:packagegroup-x-linux-ai-npu = "X-LINUX-AI minimum NPU components"
 RDEPENDS:packagegroup-x-linux-ai-npu += "\
     tim-vx \
     tim-vx-tools \
+    nbg-benchmark \
 "
