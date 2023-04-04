@@ -96,7 +96,7 @@ if [ "$DCMIPP_SENSOR" != "NOTFOUND" ]; then
 else
     get_webcam_device
     # suppose we have a webcam
-    V4L2_CAPS="video/x-raw"
+    V4L2_CAPS="video/x-raw, width=$WIDTH, height=$HEIGHT"
     V4L_OPT="io-mode=4"
     v4l2-ctl --set-parm=20
 fi

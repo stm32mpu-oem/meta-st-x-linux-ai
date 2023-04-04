@@ -25,9 +25,13 @@ SRC_URI += " file://resources/st_icon_next_inference_65x80.png;subdir=${BPN}-${P
 SRC_URI += " file://resources/st_icon_next_inference_130x160.png;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/exit_25x25.png;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/exit_50x50.png;subdir=${BPN}-${PV} "
-SRC_URI += " file://resources/setup_camera.sh;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/config_board.sh;subdir=${BPN}-${PV} "
-SRC_URI += " file://resources/check_camera_preview.sh;subdir=${BPN}-${PV} "
+
+SRC_URI:append:stm32mp1common = "   file://resources/check_camera_preview.sh;subdir=${BPN}-${PV} \
+                                    file://resources/setup_camera.sh;subdir=${BPN}-${PV} "
+
+SRC_URI:append:stm32mp25common = "  file://resources/check_camera_preview_main_isp.sh;subdir=${BPN}-${PV} \
+                                    file://resources/setup_camera_main_isp.sh;subdir=${BPN}-${PV} "
 
 S = "${WORKDIR}/${BPN}-${PV}"
 
@@ -55,6 +59,14 @@ do_install() {
     install -d ${D}${prefix}/local/demo/application
     install -d ${D}${prefix}/local/demo-ai/computer-vision/tflite-object-detection/bin
     install -d ${D}${prefix}/local/demo-ai/computer-vision/tflite-object-detection/bin/resources
+
+    if [ -f ${S}/resources/check_camera_preview_main_isp.sh ]; then
+        mv  ${S}/resources/check_camera_preview_main_isp.sh ${S}/resources/check_camera_preview.sh
+    fi
+
+    if [ -f ${S}/resources/setup_camera_main_isp.sh ]; then
+        mv  ${S}/resources/setup_camera_main_isp.sh ${S}/resources/setup_camera.sh
+    fi
 
     # install applications into the demo launcher
     install -m 0755 ${S}/object-detection/src/*.yaml	${D}${prefix}/local/demo/application

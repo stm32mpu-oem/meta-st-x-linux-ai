@@ -182,6 +182,8 @@ typedef struct _CustomData {
 	bool new_inference;
 	cv::Mat img_to_display;
 
+	/* ISP configuration */
+	int cpt_frame = 0;
 
 } CustomData;
 
@@ -258,6 +260,19 @@ auto setup_camera() {
 	}
 	system("rm -rf /tmp/camera_device.txt");
 	return camera_info;
+}
+
+/**
+ * This function is called to for updating ISP configuration
+ */
+
+auto update_isp_config(CustomData *data){
+	std::stringstream isp_config;
+	isp_config << "/usr/local/demo/application/camera/bin/isp -w > /dev/null";
+	if (data->cpt_frame == 0){
+		system(isp_config.str().c_str());
+	}
+    return TRUE;
 }
 
 /**
@@ -1062,6 +1077,12 @@ static GstFlowReturn gst_new_sample_cb(GstElement *sink, CustomData *data)
 	/* Retrieve the buffer */
 	g_signal_emit_by_name (sink, "pull-sample", &sample);
 	if (sample) {
+
+		update_isp_config(data);
+        data->cpt_frame += 1;
+    	if (data->cpt_frame == 30)
+            data->cpt_frame = 0;
+
 		buffer = gst_sample_get_buffer (sample);
 
 		/* Make a copy */
@@ -1199,7 +1220,7 @@ static int gst_pipeline_camera_creation(CustomData *data)
 
 	/* Create caps based on application parameters */
 	std::stringstream sourceCaps_sstr;
-	sourceCaps_sstr << data->camera_info.camera_caps << ",width=" << camera_width_str << ",height=" << camera_height_str << ",framerate=" << camera_fps_str << "/1";
+	sourceCaps_sstr << data->camera_info.camera_caps << ",framerate=" << camera_fps_str << "/1";
 	g_print("camera pipeline configuration : %s \n",sourceCaps_sstr.str().c_str());
 	GstCaps *sourceCaps = gst_caps_from_string(sourceCaps_sstr.str().c_str());
 	std::stringstream scaleCaps_sstr;
