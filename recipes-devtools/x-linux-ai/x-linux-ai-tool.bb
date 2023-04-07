@@ -4,16 +4,23 @@ SUMMARY = "X-LINUX-AI version binary"
 LICENSE = "CLOSED"
 
 SRC_URI = "	file://x-linux-ai-tool/x-linux-ai-tool.cc \
-		file://x-linux-ai-tool/README_sym \
-		file://x-linux-ai-tool/Makefile \
+			file://x-linux-ai-tool/README_sym \
+			file://x-linux-ai-tool/Makefile \
 "
 
 BBCLASSEXTEND = " nativesdk "
 
 S = "${WORKDIR}/${BPN}"
 
+BOARD_USED:stm32mp1common = "stm32mp1"
+BOARD_USED:stm32mp25common = "stm32mp2_npu"
+
 do_configure() {
-    xpkg_ver=$(sed -n -e 's/^.*\(X-LINUX-AI v\)/\1/p' README_sym | cut -f2 -d ' ')
+    if [ "${BOARD_USED}" == "stm32mp1" ]; then
+		xpkg_ver=$(sed -n -e 's/^.*\(X-LINUX-AI v\)/\1/p' README_sym | cut -f2 -d ' ')
+    else
+		xpkg_ver=$(sed -n -e 's/^.*\(X-LINUX-AI STM32MP25\)/\1/p' README_sym | cut -f2 -d '5' | cut -f2 -d ' ' | head -n 1)
+    fi
     xpkg_fea=$(sed -n '/^*.TensorFlow/,${p;/^*.Application.samples/q}' README_sym | sed '$d' | sed '1s/^//;$!s/$/ \\n \\/;$s/$//')
     xpkg_app=$(sed -n '/^*.Application.samples/,${p;/^*.Application.support/q}' README_sym | sed '1d;$d' | sed '1s/^//;$!s/$/ \\n \\/;$s/$//' | sed 's/^\ *//g' )
     cat << EOF > readme.h
