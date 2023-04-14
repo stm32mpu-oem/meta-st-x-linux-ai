@@ -158,6 +158,7 @@ class GstWidget(Gtk.Box):
          self.instant_fps = 0
          self.app = app
          self.nn = nn
+         self.cpt_frame = 0
 
     def _on_realize(self, widget):
             """
@@ -173,7 +174,7 @@ class GstWidget(Gtk.Box):
             self.v4lsrc1.set_property("io-mode", 0)
 
             #creation of the v4l2src caps
-            caps = str(self.app.camera_caps) + ", width=" + str(args.frame_width) +",height=" + str(args.frame_height) + ", framerate=" + str(args.framerate)+ "/1"
+            caps = str(self.app.camera_caps) + ", framerate=" + str(args.framerate)+ "/1"
             print("Camera pipeline configuration : ",caps)
             camera1caps = Gst.Caps.from_string(caps)
             self.camerafilter1 = Gst.ElementFactory.make("capsfilter", "filter1")
@@ -280,6 +281,12 @@ class GstWidget(Gtk.Box):
         if message.get_structure().get_name() == 'inference-done':
             self.app.update_ui()
 
+    def update_isp_config(self):
+        if self.cpt_frame == 0:
+            isp_config = "/usr/local/demo/application/camera/bin/isp -w > /dev/null"
+            subprocess.run(isp_config,shell=True)
+        return True
+
     def gst_to_opencv(self,sample):
         """
         conversion of the gstreamer frame buffer into numpy array
@@ -325,6 +332,10 @@ class GstWidget(Gtk.Box):
         sample = self.appsink.emit("pull-sample")
         arr = self.gst_to_opencv(sample)
         if arr is not None :
+            self.update_isp_config()
+            self.cpt_frame += 1
+            if self.cpt_frame == 30:
+                self.cpt_frame = 0
             start_time = timer()
             self.nn.launch_inference(arr)
             stop_time = timer()
