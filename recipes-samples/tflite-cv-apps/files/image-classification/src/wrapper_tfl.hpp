@@ -33,6 +33,7 @@
 #include <string>
 #include <sys/time.h>
 #include <vector>
+#include <fstream>
 
 #include "tensorflow/lite/kernels/register.h"
 #include "tensorflow/lite/model.h"
@@ -40,6 +41,13 @@
 
 #ifdef EDGETPU
 #include "tflite/public/edgetpu.h"
+#endif
+
+#include "tensorflow/lite/delegates/external/external_delegate.h"
+#include "tensorflow/lite/interpreter.h"
+
+#ifdef VSI_OP
+#include "VX/vsi_npu_custom_op.h"
 #endif
 
 #define LOG(x) std::cerr
@@ -57,6 +65,8 @@ namespace wrapper_tfl {
 		std::string model_name;
 		std::string labels_file_name;
 		bool edgetpu;
+		bool accel;
+		std::string external_delegate_path;
 	};
 
 	struct Label_Results {
@@ -84,6 +94,10 @@ namespace wrapper_tfl {
 		int                                      m_numberOfThreads;
 		int                                      m_numberOfResults;
 		bool                                     m_edgetpu;
+		bool                                     m_accel;
+		bool                                     m_npu;
+		const char *                             m_external_delegate_path;
+		std::string                              m_vxdelegate;
 
 	public:
 		Tfl_Wrapper() {}
@@ -114,6 +128,25 @@ namespace wrapper_tfl {
 				m_edgetpu_ctx = edgetpu::EdgeTpuManager::GetSingleton()->OpenDevice();
 #endif
 			}
+			m_inputFloating = false;
+			m_allow_fp16 = false;
+			m_inferenceTime = 0;
+			m_verbose = conf->verbose;
+			m_inputMean = conf->input_mean;
+			m_inputStd = conf->input_std;
+			m_numberOfThreads = conf->number_of_threads;
+			m_numberOfResults = conf->number_of_results;
+			m_accel = conf->accel;
+			m_external_delegate_path = conf->external_delegate_path.c_str();
+			m_vxdelegate = "libvx_delegate";
+			m_npu = false;
+
+			/*  Check which delegate is used  */
+			std::size_t found = conf->external_delegate_path.find(m_vxdelegate);
+			if (found!=std::string::npos) {
+				/* vx_delegate found */
+				m_npu = true;
+			}
 
 			if (!conf->model_name.c_str()) {
 				LOG(ERROR) << "no model file name\n";
@@ -138,11 +171,26 @@ namespace wrapper_tfl {
 #endif
 			}
 
+#ifdef VSI_OP
+			if(m_accel && m_npu) {
+				resolver.AddCustom(kNbgCustomOp, tflite::ops::custom::Register_VSI_NPU_PRECOMPILED());
+			}
+#endif
+
 			tflite::InterpreterBuilder(*model, resolver)(&interpreter);
 			if (!interpreter) {
 				LOG(FATAL) << "Failed to construct interpreter\n";
 				exit(-1);
 			}
+
+#ifdef VSI_OP
+			if(m_accel) {
+				const char * delegate_path = m_external_delegate_path;
+				auto ext_delegate_option = TfLiteExternalDelegateOptionsDefault(delegate_path);
+				auto ext_delegate_ptr = TfLiteExternalDelegateCreate(&ext_delegate_option);
+				interpreter->ModifyGraphWithDelegate(ext_delegate_ptr);
+			}
+#endif
 
 			int input = interpreter->inputs()[0];
 			if (interpreter->tensor(input)->type == kTfLiteFloat32) {

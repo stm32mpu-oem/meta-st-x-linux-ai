@@ -62,11 +62,18 @@ std::string camera_width_str  = "640";
 std::string camera_height_str = "480";
 std::string val_run_str = "50";
 
+std::string external_delegate_path_str = "/usr/lib/libvx_delegate.so.2";
+
 bool verbose = false;
 bool validation = false;
 bool crop = false;
 bool accel = false;
 bool tpu = false;
+bool external_delegate = false;
+bool npu = false;
+bool gtk_main_started = false;
+bool exit_application = false;
+bool dcmipp_camera = false;
 
 float threshold = 0.60;
 float input_mean = 127.5f;
@@ -78,9 +85,6 @@ struct wrapper_tfl::Tfl_Wrapper tfl_wrapper;
 struct wrapper_tfl::Config config;
 wrapper_tfl::Frame_Results results;
 std::vector<std::string> labels;
-
-bool gtk_main_started = false;
-bool exit_application = false;
 
 #define RESOURCES_DIRECTORY  "/usr/local/demo-ai/computer-vision/tflite-object-detection/bin/resources/"
 #define RESOURCES_DIRECTORY_EDGETPU "/usr/local/demo-ai/computer-vision/tflite-object-detection-edgetpu/bin/resources/"
@@ -250,7 +254,6 @@ auto setup_camera() {
 	} else {
 		config_camera << RESOURCES_DIRECTORY_EDGETPU << "setup_camera.sh " << camera_width_str << " " << camera_height_str << " " << camera_fps_str << " " << video_device_str << " > /tmp/camera_device.txt";
 	}
-
 	system(config_camera.str().c_str());
 	std::string video_device_pattern = "V4L_DEVICE=";
 	std::string camera_caps_pattern = "V4L2_CAPS=";
@@ -426,6 +429,7 @@ static std::string get_files_in_directory_randomly(std::string directory)
 /**
  * This function is an idle function waiting for a new picture to be inferred
  */
+bool first_call_validation = true;
 static gboolean infer_new_picture(CustomData *data)
 {
 	g_print("infer_new_picture \n");
@@ -488,11 +492,23 @@ static gboolean infer_new_picture(CustomData *data)
 		g_free(label_to_display);
 
 		if (validation) {
-			data->valid_inference_time.push_back(results.inference_time);
-
+			if (first_call_validation){
+			/* Skip the first inference time in hardware
+			 * accelerated mode which is the warmup time
+			 * The warmup time is far more important than
+			 * classic inference time and will make average
+			 * inference time completly false
+			 * */
+				first_call_validation = false;
+				if(not(accel))
+				/* In CPU mode no warmup time to skip  */
+					data->valid_inference_time.push_back(results.inference_time);
+			} else {
+				data->valid_inference_time.push_back(results.inference_time);
+			}
 			/* Reload the timeout */
 			g_source_remove(data->valid_timeout_id);
-			data->valid_timeout_id = g_timeout_add(5000,
+			data->valid_timeout_id = g_timeout_add(100000,
 							       valid_timeout_callback,
 							       NULL);
 			std::stringstream label_sstr;
@@ -1489,7 +1505,7 @@ static int gst_pipeline_camera_creation(CustomData *data)
 		return -2;
 	}
 	if (!gst_element_link_many(tee, queue1, convert2, fpsmeasure1, NULL)) {
-		g_error("Failed to link elements (5)");
+		g_error("Failed to link elements (4)");
 		return -2;
 	}
 
@@ -1523,6 +1539,9 @@ static void print_help(int argc, char** argv)
 #ifdef EDGETPU
 		"--edgetpu                             if set, the Coral EdgeTPU acceleration is enabled \n"
 #endif
+		"-t --threshold                        threshold of accuracy above which the boxes are displayed (default 0.60)\n"
+		"-e --ext_delegate <library path>      external delegate used for the NN inference\n"
+		"--npu                                 if set, the NPU is used for the inference \n"
 		"--crop:                               if set, the nn input image is cropped (with the expected nn aspect ratio) before being resized,\n"
 		"                                      else the nn input image is only resized to the nn input size (could cause picture deformation).\n"
 		"--frame_width  <val>:                 width of the camera frame (default is 640)\n"
@@ -1553,9 +1572,10 @@ static void print_help(int argc, char** argv)
 #ifdef EDGETPU
 #define OPT_EDGETPU      1007
 #endif
+#define OPT_NPU          1008
 void process_args(int argc, char** argv)
 {
-	const char* const short_opts = "m:l:i:v:c:t:h";
+	const char* const short_opts = "m:l:i:v:c:e:t:h";
 	const option long_opts[] = {
 		{"model_file",   required_argument, nullptr, 'm'},
 		{"label_file",   required_argument, nullptr, 'l'},
@@ -1565,6 +1585,9 @@ void process_args(int argc, char** argv)
 #ifdef EDGETPU
 		{"edgetpu",      no_argument,       nullptr, OPT_EDGETPU},
 #endif
+		{"ext_delegate", required_argument, nullptr, 'e'},
+		{"threshold",    required_argument, nullptr, 't'},
+		{"npu",          no_argument,       nullptr, OPT_NPU},
 		{"frame_width",  required_argument, nullptr, OPT_FRAME_WIDTH},
 		{"frame_height", required_argument, nullptr, OPT_FRAME_HEIGHT},
 		{"framerate",    required_argument, nullptr, OPT_FRAMERATE},
@@ -1573,7 +1596,6 @@ void process_args(int argc, char** argv)
 		{"verbose",      no_argument,       nullptr, OPT_VERBOSE},
 		{"validation",   no_argument,       nullptr, OPT_VALIDATION},
 		{"val_run",      required_argument, nullptr, OPT_VAL_RUN},
-		{"threshold",    required_argument, nullptr, 't'},
 		{"help",         no_argument,       nullptr, 'h'},
 		{nullptr,        no_argument,       nullptr, 0}
 	};
@@ -1611,6 +1633,19 @@ void process_args(int argc, char** argv)
 			std::cout << "Inference launched on EdgeTPU" << std::endl;
 #endif
 			break;
+		case 'e':
+			external_delegate = true;
+			external_delegate_path_str = std::string(optarg);
+			std::cout << "external delegate path set to:" << external_delegate_path_str << std::endl;
+			break;
+		case 't':
+			threshold = std::stof(optarg);
+			std::cout << "threshold value set to: " << threshold << std::endl;
+			break;
+		case OPT_NPU:
+			npu = true;
+			std::cout << "Inference launched on NPU with the delagate :" << external_delegate_path_str << std::endl;
+			break;
 		case OPT_FRAME_WIDTH:
 			camera_width_str = std::string(optarg);
 			std::cout << "camera frame width set to: " << camera_width_str << std::endl;
@@ -1642,10 +1677,6 @@ void process_args(int argc, char** argv)
 		case OPT_VAL_RUN:
 			val_run_str = std::string(optarg);
 			std::cout << "number of draws has been set" << val_run_str << std::endl;
-			break;
-		case 't':
-			threshold = std::stof(optarg);
-			std::cout << "threshold value set to: " << threshold << std::endl;
 			break;
 		case 'h': // -h or --help
 		case '?': // Unrecognized option
@@ -1739,9 +1770,27 @@ int main(int argc, char *argv[])
 
 	if(tpu){
 		accel = true;
+		g_print("EdgeTPU acceleration: used\n");
 	} else {
-		g_print("Inference launched on CPU\n");
+		g_print("EdgeTPU acceleration: not used\n");
+	}
+
+	if(npu or external_delegate){
+		if (access(external_delegate_path_str.c_str(), F_OK) == -1) {
+			g_printerr("ERROR: No external delegate, %s does not exist.\n", external_delegate_path_str.c_str());
+			accel = false;
+			g_print("Inference acceleration not available, fall back into cpu mode\n");
+		} else {
+			accel = true;
+			g_print("Delegate acceleration: used\n");
+		}
+	} else {
+		g_print("Delegate acceleration: not used\n");
 		accel = false;
+	}
+
+	if (!accel){
+		g_print("Inference launched on CPU\n");
 	}
 
 	/* TensorFlow Lite wrapper initialization */
@@ -1753,6 +1802,8 @@ int main(int argc, char *argv[])
 	config.number_of_threads = nb_cpu_cores;
 	config.number_of_results = 5;
 	config.edgetpu = tpu;
+	config.accel = accel;
+	config.external_delegate_path = external_delegate_path_str;
 
 	tfl_wrapper.Initialize(&config);
 

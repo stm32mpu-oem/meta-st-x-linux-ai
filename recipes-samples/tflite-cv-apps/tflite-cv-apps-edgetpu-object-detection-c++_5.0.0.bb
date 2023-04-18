@@ -47,6 +47,9 @@ do_compile() {
     oe_runmake OPENCV_PKGCONFIG=${OPENCV_VERSION} -C ${S}/object-detection/src
 }
 
+BOARD_USED:stm32mp1common = "stm32mp1"
+BOARD_USED:stm32mp2common = "stm32mp2"
+
 do_install() {
     install -d ${D}${prefix}/local/demo/
     install -d ${D}${prefix}/local/demo/application
@@ -63,7 +66,6 @@ do_install() {
     install -m 0755 ${S}/object-detection/src/*_gtk  ${D}${prefix}/local/demo-ai/computer-vision/tflite-object-detection-edgetpu/bin
     install -m 0755 ${S}/object-detection/src/*.sh   ${D}${prefix}/local/demo-ai/computer-vision/tflite-object-detection-edgetpu/bin
     install -m 0755 ${S}/object-detection/src/*.css  ${D}${prefix}/local/demo-ai/computer-vision/tflite-object-detection-edgetpu/bin/resources
-
 }
 
 FILES:${PN} += "${prefix}/local/"
