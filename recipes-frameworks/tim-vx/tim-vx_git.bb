@@ -101,6 +101,3 @@ FILES:${PN}-dev += "${libdir}/libtim-vx.so"
 FILES:${PN} += " ${libdir}/libtim-vx.so.${MAJOR} \
                  ${libdir}/libtim-vx.so.${PVB}   \
 "
-RDEPENDS:${PN} += "libopencl-gcnano-dev"
-
-INSANE_SKIP:${PN} = "dev-deps"
