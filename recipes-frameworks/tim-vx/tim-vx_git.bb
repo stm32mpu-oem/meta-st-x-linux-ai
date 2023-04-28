@@ -96,8 +96,9 @@ FILES:${PN}-tools = "   /usr/local/bin/${PN}-${PVB}/TIM-VX_test \
 			${libdir}/libgmock.so \
 "
 
-FILES:${PN}-dev += "${libdir}/libtim-vx.so"
-
 FILES:${PN} += " ${libdir}/libtim-vx.so.${MAJOR} \
                  ${libdir}/libtim-vx.so.${PVB}   \
+                 ${libdir}/libtim-vx.so \
 "
+
+INSANE_SKIP:${PN} += " dev-so "

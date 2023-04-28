@@ -68,7 +68,3 @@ do_install() {
 FILES:${PN} += " ${libdir}/libvx_delegate.so.${MAJOR} \
                  ${libdir}/libvx_delegate.so.${PVB} \
 "
-
-RDEPENDS:${PN} += "tim-vx-dev"
-
-INSANE_SKIP:${PN} += " ldflags dev-deps"
