@@ -1,0 +1,15 @@
+Application:
+    Name: Image Classification
+    Description: Mobilenet v1
+    Icon: ../demo-ai/computer-vision/nbg-image-classification/bin/resources/NBG_C++.png
+    Board:
+        List: all
+    Type: script
+    Script:
+        Exist:
+            File: /usr/local/demo-ai/computer-vision/nbg-image-classification/bin/resources/check_camera_preview.sh
+            Msg_false: Camera is not connected
+        Start: ../demo-ai/computer-vision/nbg-image-classification/bin/launch_bin_label_nbg_mobilenet.sh
+    Action:
+        button_release_event: script_management
+        button_press_event: highlight_eventBox
