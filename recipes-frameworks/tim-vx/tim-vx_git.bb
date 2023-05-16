@@ -5,12 +5,12 @@ SUMMARY = "Tensor Interface Module for OpenVX"
 HOMEPAGE = "https://github.com/VeriSilicon/TIM-VX"
 LICENSE = "MIT"
 
-LIC_FILES_CHKSUM = "file://LICENSE;md5=ededf2503f5d147ae718276dfd28801f"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=d72cd187d764d96d91db827cb65b48a7"
 
 PV = "1.1.57+git${SRCPV}"
 
 SRCBRANCH = "main"
-SRCREV = "0e211c8efdf412a7d09629aa0452d9356e6d113b"
+SRCREV = "1543efe0982ccfdd9a1ccfda0b61ac73cfecd917"
 SRC_URI ="git://github.com/VeriSilicon/TIM-VX.git;branch=${SRCBRANCH};protocol=https"
 
 S = "${WORKDIR}/git"
