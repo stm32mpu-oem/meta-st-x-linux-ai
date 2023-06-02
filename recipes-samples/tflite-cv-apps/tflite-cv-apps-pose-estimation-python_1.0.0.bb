@@ -8,7 +8,7 @@ SRC_URI  = " file://pose-estimation/python/410-tflite-pose-estimation-python.yam
 SRC_URI += " file://pose-estimation/python/pose_estimation_tfl.py;subdir=${BPN}-${PV} "
 SRC_URI += " file://pose-estimation/python/launch_python_pose_estimation_tfl_movenet_singlepose.sh;subdir=${BPN}-${PV} "
 SRC_URI += " file://pose-estimation/python/launch_python_pose_estimation_tfl_movenet_singlepose_testdata.sh;subdir=${BPN}-${PV} "
-SRC_URI += " file://pose-estimation/python/py_widgets.css;subdir=${BPN}-${PV} "
+SRC_URI += " file://pose-estimation/python/Default.css;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/TensorFlowLite_Python.png;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/st_icon_42x52.png;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/st_icon_65x80.png;subdir=${BPN}-${PV} "
