@@ -7,7 +7,7 @@ SRC_URI  = " file://semantic-segmentation/python/510-tflite-semantic-segmentatio
 SRC_URI += " file://semantic-segmentation/python/sem_seg_tfl.py;subdir=${BPN}-${PV} "
 SRC_URI += " file://semantic-segmentation/python/launch_python_semantic_seg_tfl_deeplabv3.sh;subdir=${BPN}-${PV} "
 SRC_URI += " file://semantic-segmentation/python/launch_python_semantic_seg_tfl_deeplabv3_testdata.sh;subdir=${BPN}-${PV} "
-SRC_URI += " file://semantic-segmentation/python/py_widgets.css;subdir=${BPN}-${PV} "
+SRC_URI += " file://semantic-segmentation/python/Default.css;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/TensorFlowLite_Python.png;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/st_icon_42x52.png;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/st_icon_65x80.png;subdir=${BPN}-${PV} "
