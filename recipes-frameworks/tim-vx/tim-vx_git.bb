@@ -10,7 +10,7 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=d72cd187d764d96d91db827cb65b48a7"
 PV = "1.1.57+git${SRCPV}"
 
 SRCBRANCH = "main"
-SRCREV = "1543efe0982ccfdd9a1ccfda0b61ac73cfecd917"
+SRCREV = "18749f5d05c106381082e76fef36f2894578ca98"
 SRC_URI ="git://github.com/VeriSilicon/TIM-VX.git;branch=${SRCBRANCH};protocol=https"
 
 S = "${WORKDIR}/git"
