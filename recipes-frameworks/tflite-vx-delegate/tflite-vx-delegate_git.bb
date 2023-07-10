@@ -4,17 +4,18 @@ LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=7d6260e4f3f6f85de05af9c8f87e6fb5"
 
 SRCBRANCH_vx = "main"
-SRCREV_vx = "ce8846740fa3123ecc2cad400ff9107e6b5a53f9"
+SRCREV_vx = "a975b7ed7a5797812d3c5bdb7310ee92164d0a35"
 
-SRCBRANCH_tf = "r2.10"
-SRCREV_tf = "fdfc646704c37bdf450525f6ced9d80df86e4993"
+SRCBRANCH_tf = "r2.11"
+SRCREV_tf = "5d37bd0350f0144632629c1aa2ebaef6ca76300b"
 
-SRC_URI = "git://github.com/VeriSilicon/tflite-vx-delegate.git;branch=${SRCBRANCH_vx};name=vx;destsuffix=git_vx/;protocol=https \
-           git://github.com/tensorflow/tensorflow.git;branch=${SRCBRANCH_tf};name=tf;destsuffix=git_tf/;protocol=https "
+SRC_URI =  "git://github.com/VeriSilicon/tflite-vx-delegate.git;branch=${SRCBRANCH_vx};name=vx;destsuffix=git_vx/;protocol=https \
+            git://github.com/tensorflow/tensorflow;branch=${SRCBRANCH_tf};name=tf;destsuffix=git_tf/;protocol=https "
+SRC_URI += "file://0001-tflite-vx-delegate-fix-to-support-tflite-2-11.patch;patchdir=${WORKDIR}/git_tf"
 
-PV = "2.10.0+git${SRCREV_vx}"
+PV = "2.11.0+git${SRCREV_vx}"
 S = "${WORKDIR}/git_vx"
-COMPATIBLE_MACHINE = "stm32mp2common"
+COMPATIBLE_MACHINE = "stm32mp25common"
 
 inherit cmake
 DEPENDS += "tim-vx patchelf-native"
