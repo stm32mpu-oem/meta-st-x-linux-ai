@@ -371,8 +371,10 @@ class GstWidget(Gtk.Box):
 
     def update_isp_config(self):
         if self.cpt_frame == 0:
+            isp_file = "/usr/local/demo/application/camera/bin/isp"
             isp_config = "/usr/local/demo/application/camera/bin/isp -w > /dev/null"
-            subprocess.run(isp_config,shell=True)
+            if os.path.exists(isp_file) and self.app.dcmipp_sensor=="imx335" :
+                subprocess.run(isp_config,shell=True)
         return True
 
     def gst_to_opencv(self,sample):
@@ -894,7 +896,7 @@ class Application:
             if check_camera.returncode==1:
                 print("no camera connected")
                 exit(1)
-            self.video_device,self.camera_caps=self.setup_camera()
+            self.video_device,self.camera_caps,self.dcmipp_sensor=self.setup_camera()
         else:
             print("still picture mode activate")
             self.enable_camera_preview = False
@@ -957,6 +959,9 @@ class Application:
         return 0
 
     def setup_camera(self):
+        """
+        Used to configure the camera based on resolution passed as application arguments
+        """
         width = str(args.frame_width)
         height = str(args.frame_height)
         framerate = str(args.framerate)
@@ -970,7 +975,9 @@ class Application:
                 video_device = i.lstrip('V4L_DEVICE=')
             if "V4L2_CAPS" in i:
                 camera_caps = i.lstrip('V4L2_CAPS=')
-        return video_device, camera_caps
+            if "DCMIPP_SENSOR" in i:
+                dcmipp_sensor = i.lstrip('DCMIPP_SENSOR=')
+        return video_device, camera_caps, dcmipp_sensor
 
     def valid_timeout_callback(self):
         """

@@ -96,6 +96,7 @@ typedef struct _FramePosition {
 typedef struct _Config_camera {
 	std::string video_device;
 	std::string camera_caps;
+	std::string dcmipp_sensor;
 } Config_camera;
 
 /* Structure that contains all information to pass around */
@@ -242,6 +243,7 @@ auto setup_camera() {
 	system(config_camera.str().c_str());
 	std::string video_device_pattern = "V4L_DEVICE=";
 	std::string camera_caps_pattern = "V4L2_CAPS=";
+	std::string dcmipp_sensor_pattern = "DCMIPP_SENSOR=";
 	Config_camera camera_info;
 	std::ifstream file("/tmp/camera_device.txt");
 	if (file.is_open()) {
@@ -253,7 +255,11 @@ auto setup_camera() {
 			}
 			int found_camera = line.find(camera_caps_pattern);
 			if (found_camera != -1) {
-				camera_info.camera_caps = line.substr((found_camera+ camera_caps_pattern.length()));
+				camera_info.camera_caps = line.substr((found_camera + camera_caps_pattern.length()));
+			}
+			int found_dcmipp = line.find(dcmipp_sensor_pattern);
+			if (found_dcmipp != -1) {
+				camera_info.dcmipp_sensor = line.substr((found_dcmipp + dcmipp_sensor_pattern.length()));
 			}
 	    }
 	    file.close();
@@ -266,10 +272,14 @@ auto setup_camera() {
  * This function is called to for updating ISP configuration
  */
 
-auto update_isp_config(CustomData *data){
+auto update_isp_config(CustomData *data)
+{
+	std::stringstream isp_file;
 	std::stringstream isp_config;
-	isp_config << "/usr/local/demo/application/camera/bin/isp -w > /dev/null";
-	if (data->cpt_frame == 0){
+	isp_file << "/usr/local/demo/application/camera/bin/isp";
+	isp_config << isp_file.str().c_str() << " -w > /dev/null";
+	std::ifstream file(isp_file.str().c_str());
+	if (data->cpt_frame == 0 && file.good() && data->camera_info.dcmipp_sensor.compare("imx335") == 0 ){
 		system(isp_config.str().c_str());
 	}
     return TRUE;
