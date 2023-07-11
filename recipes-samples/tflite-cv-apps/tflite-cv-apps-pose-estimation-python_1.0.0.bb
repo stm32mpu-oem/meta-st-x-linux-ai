@@ -3,7 +3,6 @@ SUMMARY = "TensorFlowLite Python Computer Vision pose estimation application exa
 LICENSE = "BSD-3-Clause"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/BSD-3-Clause;md5=550794465ba0ec5312d6919e203a55f9"
 
-COMPATIBLE_MACHINE = "(stm32mp2common)"
 SRC_URI  = " file://pose-estimation/python/410-tflite-pose-estimation-python.yaml;subdir=${BPN}-${PV} "
 SRC_URI += " file://pose-estimation/python/pose_estimation_tfl.py;subdir=${BPN}-${PV} "
 SRC_URI += " file://pose-estimation/python/launch_python_pose_estimation_tfl_movenet_singlepose.sh;subdir=${BPN}-${PV} "
@@ -25,6 +24,9 @@ SRC_URI:append:stm32mp1common = "   file://resources/check_camera_preview.sh;sub
 
 SRC_URI:append:stm32mp25common = "  file://resources/check_camera_preview_main_isp.sh;subdir=${BPN}-${PV} \
                                     file://resources/setup_camera_main_isp.sh;subdir=${BPN}-${PV} "
+
+# Only compatible with stm32mp25
+COMPATIBLE_MACHINE = "stm32mp25common"
 
 S = "${WORKDIR}/${BPN}-${PV}"
 

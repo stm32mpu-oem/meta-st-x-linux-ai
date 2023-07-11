@@ -25,6 +25,9 @@ SRC_URI:append:stm32mp1common = "   file://resources/check_camera_preview.sh;sub
 SRC_URI:append:stm32mp25common = "  file://resources/check_camera_preview_main_isp.sh;subdir=${BPN}-${PV} \
                                     file://resources/setup_camera_main_isp.sh;subdir=${BPN}-${PV} "
 
+# Only compatible with stm32mp25
+COMPATIBLE_MACHINE = "stm32mp25common"
+
 S = "${WORKDIR}/${BPN}-${PV}"
 
 do_configure[noexec] = "1"
