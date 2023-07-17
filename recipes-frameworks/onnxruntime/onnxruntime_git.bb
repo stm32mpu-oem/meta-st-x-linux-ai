@@ -15,7 +15,7 @@ SRC_URI += " file://0002-onnxruntime-add-SONAME-with-MAJOR-version.patch "
 SRC_URI += " file://0003-onnxruntime-test-libcustom-library-remove-relative.patch "
 SRC_URI += " file://0004-onnxruntime-fix-imcompatibility-with-compiler-GCC12.patch "
 SRC_URI += " file://0005-onnxruntime-avoid-using-unsupported-Eigen-headers.patch "
-SRC_URI:append:stm32mp25common = " file://0006-onnxruntime-xnnpack-Fix-mcpu-compiler-build-failure.patch "
+SRC_URI:append:stm32mp2common = " file://0006-onnxruntime-xnnpack-Fix-mcpu-compiler-build-failure.patch "
 
 PROTOC_VERSION = "3.20.2"
 SRC_URI += "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip;name=protoc;subdir=protoc-${PROTOC_VERSION}/"

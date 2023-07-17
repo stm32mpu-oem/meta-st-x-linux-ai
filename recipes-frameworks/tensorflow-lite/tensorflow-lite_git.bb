@@ -18,7 +18,7 @@ SRC_URI += " file://0003-TFLite-cmake-add-SONAME-with-MAJOR-version.patch "
 SRC_URI += " file://0004-TFLite-cmake-support-git-clone-shallow-with-specifie.patch "
 SRC_URI += " file://0005-TFLite-cmake-change-the-version-of-flatbuffer-to-avo.patch "
 SRC_URI += " file://0006-TFLite-cmake-add-XNNPACK-delegate-u8-and-i8-definition.patch "
-SRC_URI:append:stm32mp25common = " file://0007-TFLite-fix-aarch64-support-for-XNNPACK.patch "
+SRC_URI:append:stm32mp2common = " file://0007-TFLite-fix-aarch64-support-for-XNNPACK.patch "
 
 S = "${WORKDIR}/git"
 
