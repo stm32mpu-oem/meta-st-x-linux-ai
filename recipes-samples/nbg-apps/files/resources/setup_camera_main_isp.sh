@@ -14,7 +14,6 @@ function cmd() {
 }
 
 function is_dcmipp_present() {
-	echo "is_dcmipp_present function"
 	DCMIPP_SENSOR="NOTFOUND"
 	# on disco board ov5640 camera can be present on csi connector
 	for video in $(find /sys/class/video4linux -name "video*" -type l);
@@ -66,7 +65,7 @@ function get_webcam_device() {
 #dcmipp camera of a webcam
 if [ "$DEVICE" != "" ]; then
 	DCMIPP_SENSOR="NOTFOUND"
-	if [ "$(cat /sys/class/video4linux/$DEVICE/name)" = "dcmipp_dump_capture" ]; then
+	if [ "$(cat /sys/class/video4linux/$DEVICE/name)" = "dcmipp_dump_capture" ] || [ "$(cat /sys/class/video4linux/$DEVICE/name)" = "dcmipp_main_capture" ] ; then
 		cd /sys/class/video4linux/$DEVICE/device/
 		mediadev=/dev/$(ls -d media*)
 		cd -
@@ -77,13 +76,19 @@ if [ "$DEVICE" != "" ]; then
 				DCMIPP_SENSOR=$subdev_name
 				echo "DCMIPP_SENSOR="$DCMIPP_SENSOR
 				V4L_DEVICE="$(basename $DEVICE)"
-				sensorsubdev=$(tr -d '\0' < $sub/name)
-				#bridge is connected to output of sensor (":0 [ENABLED" with media-ctl -p)
-				bridgesubdev=$(media-ctl -d $mediadev -p -e "$sensorsubdev" | grep ":0 \[ENABLED" | awk -F\" '{print $2}')
-				#interface is connected to input of postproc (":1 [ENABLED" with media-ctl -p)
-				interfacesubdev=$(media-ctl -d $mediadev -p -e "dcmipp_dump_postproc" | grep ":1 \[ENABLED" | awk -F\" '{print $2}')
+				sensorsubdev="$(tr -d '\0' < $sub/name)"
+				sensordev=$(media-ctl -d $mediadev -p -e "$sensorsubdev" | grep "node name" | awk -F\name '{print $2}')
+				#interface is connected to input of isp (":1 [ENABLED" with media-ctl -p)
+				interfacesubdev=$(media-ctl -d $mediadev -p -e "dcmipp_main_isp" | grep ":1 \[ENABLED" | awk -F\" '{print $2}')
+				echo "mediadev="$mediadev
+				echo "sensorsubdev=\""$sensorsubdev\"
+				echo "sensordev="$sensordev
+				echo "interfacesubdev="$interfacesubdev
 			fi
 		done
+	else
+		echo "camera specified not valid ... try to find another camera"
+		is_dcmipp_present
 	fi
 else
 	echo "camera setup is_dcmipp_present"
@@ -137,3 +142,4 @@ fi
 
 echo "V4L_DEVICE="$V4L_DEVICE
 echo "V4L2_CAPS="$V4L2_CAPS
+echo "DCMIPP_SENSOR="$DCMIPP_SENSOR
