@@ -79,4 +79,6 @@ RDEPENDS:packagegroup-x-linux-ai-npu += "\
     tim-vx \
     tim-vx-tools \
     nbg-benchmark \
+    nbg-cv-apps-image-classificaton-c++ \
+    nbg-models-mobilenetv1 \
 "
