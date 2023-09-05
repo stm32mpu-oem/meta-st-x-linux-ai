@@ -43,18 +43,17 @@ function is_dcmipp_present() {
 	done
 }
 
-function get_webcam_device() {
-	echo "get_webcam_device function"
-	found="NOTFOUND"
-	for video in $(find /sys/class/video4linux -name "video*" -type l | sort);
-	do
-		if [ "$(cat $video/name)" = "dcmipp_dump_capture" ]; then
-			found="FOUND"
-		else
-			V4L_DEVICE="$(basename $video)"
-			break;
-			fi
-	done
+get_webcam_device() {
+    found="NOTFOUND"
+    for video in $(find /sys/class/video4linux -name "video*" -type l | sort);
+    do
+        if [ "$(cat $video/name)" = "dcmipp_main_capture" ] || [ "$(cat $video/name)" = "st,stm32mp25-vdec-dec" ] || [ "$(cat $video/name)" = "st,stm32mp25-venc-enc" ] || [ "$(cat $video/name)" = "dcmipp_dump_capture" ] || [ "$(cat $video/name)" = "dcmipp_aux_capture" ] || [ "$(cat $video/name)" = "dcmipp_main_isp_stat_capture" ] ; then
+            found="FOUND"
+        else
+            V4L_DEVICE="$(basename $video)"
+            break;
+        fi
+    done
 }
 
 # ------------------------------
@@ -64,6 +63,7 @@ function get_webcam_device() {
 #if a video device is specified in the launch script use it if not search for
 #dcmipp camera of a webcam
 if [ "$DEVICE" != "" ]; then
+	echo "A video device has been specified"
 	DCMIPP_SENSOR="NOTFOUND"
 	if [ "$(cat /sys/class/video4linux/$DEVICE/name)" = "dcmipp_dump_capture" ] || [ "$(cat /sys/class/video4linux/$DEVICE/name)" = "dcmipp_main_capture" ] ; then
 		cd /sys/class/video4linux/$DEVICE/device/
@@ -87,12 +87,17 @@ if [ "$DEVICE" != "" ]; then
 			fi
 		done
 	else
-		echo "camera specified not valid ... try to find another camera"
-		is_dcmipp_present
+		if [ "$(cat /sys/class/video4linux/$DEVICE/name)" != "dcmipp_dump_capture" ] || [ "$(cat /sys/class/video4linux/$DEVICE/name)" != "dcmipp_main_capture" ] ; then
+			V4L_DEVICE="$(basename $DEVICE)"
+		else
+			echo "camera specified not valid ... try to find another camera"
+			is_dcmipp_present
+		fi
 	fi
+	echo "DCMIPP_SENSOR="$DCMIPP_SENSOR
 else
-	echo "camera setup is_dcmipp_present"
 	is_dcmipp_present
+	echo "DCMIPP_SENSOR="$DCMIPP_SENSOR
 fi
 
 if [ "$DCMIPP_SENSOR" != "NOTFOUND" ]; then
@@ -121,19 +126,21 @@ if [ "$DCMIPP_SENSOR" != "NOTFOUND" ]; then
 	echo "SENSORHEIGHT="$SENSORHEIGHT
 
     #Use main pipe for debayering, scaling and color conversion
-echo "Mediacontroller graph:"
+	echo "Mediacontroller graph:"
 	cmd "  media-ctl -d $mediadev --set-v4l2 \"'$sensorsubdev':0[fmt:$sensorbuscode/${SENSORWIDTH}x${SENSORHEIGHT}]\""
 	cmd "  media-ctl -d $mediadev --set-v4l2 \"'$interfacesubdev':1[fmt:$sensorbuscode/${SENSORWIDTH}x${SENSORHEIGHT}]\""
 	cmd "  media-ctl -d $mediadev --set-v4l2 \"'dcmipp_main_isp':1[fmt:RGB888_1X24/${SENSORWIDTH}x${SENSORHEIGHT} field:none]\""
 	cmd "  media-ctl -d $mediadev --set-v4l2 \"'dcmipp_main_postproc':0[compose:(0,0)/${WIDTH}x${HEIGHT}]\""
 	cmd "  media-ctl -d $mediadev --set-v4l2 \"'dcmipp_main_postproc':1[fmt:$displaybuscode/${WIDTH}x${HEIGHT}]\""
-echo ""
+	echo ""
 
 	#v4l2-ctl -d /dev/v4l-subdev6 --set-ctrl=horizontal_flip=1
 	V4L2_CAPS="video/x-raw, format=$FMT, width=$WIDTH, height=$HEIGHT"
 	V4L_OPT=""
 else
-	get_webcam_device
+	if [ "$DEVICE" = "" ];then
+		get_webcam_device
+	fi
 	# suppose we have a webcam
 	V4L2_CAPS="video/x-raw, width=$WIDTH, height=$HEIGHT"
 	V4L_OPT="io-mode=4"
