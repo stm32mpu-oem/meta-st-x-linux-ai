@@ -7,13 +7,17 @@ LICENSE = "MIT"
 
 LIC_FILES_CHKSUM = "file://LICENSE;md5=d72cd187d764d96d91db827cb65b48a7"
 
-PV = "1.1.57+git${SRCPV}"
+SRCBRANCH_tim_vx = "main"
+SRCREV_tim_vx = "33f3a4f176ff9c407479eaf6be78c52bb3c7a939"
+SRC_URI ="git://github.com/VeriSilicon/TIM-VX.git;branch=${SRCBRANCH_tim_vx};name=tim_vx;destsuffix=tim_vx_git/;protocol=https"
 
-SRCBRANCH = "main"
-SRCREV = "18749f5d05c106381082e76fef36f2894578ca98"
-SRC_URI ="git://github.com/VeriSilicon/TIM-VX.git;branch=${SRCBRANCH};protocol=https"
+SRCBRANCH_googletest = "main"
+SRCREV_googletest = "eab0e7e289db13eabfc246809b0284dac02a369d"
+SRC_URI +="git://github.com/google/googletest;branch=${SRCBRANCH_googletest};name=googletest;destsuffix=googletest/;protocol=https "
 
-S = "${WORKDIR}/git"
+PV = "1.1.57+git${SRCREV_tim_vx}"
+
+S = "${WORKDIR}/tim_vx_git"
 
 # Only compatible with stm32mp25
 COMPATIBLE_MACHINE = "stm32mp25common"
@@ -33,6 +37,8 @@ inherit cmake
 DEPENDS += " patchelf-native \
 	     gcnano-driver-stm32mp \
 	     gcnano-userland \
+             gtest \
+             googletest \
 	"
 
 EXTRA_OECMAKE =  " \
@@ -44,19 +50,9 @@ EXTRA_OECMAKE =  " \
     -DTIM_VX_USE_EXTERNAL_OVXLIB=ON \
     -DOVXLIB_INC=${S}/src/tim/vx/internal/include/ \
     -DOVXLIB_LIB=${STAGING_LIBDIR}/libovxlib.so \
+    -DFETCHCONTENT_SOURCE_DIR_GOOGLETEST=${WORKDIR}/googletest \
 "
 do_configure[network] = "1"
-
-do_configure:prepend() {
-    if [ -n "${http_proxy}" ]; then
-        export HTTP_PROXY=${http_proxy}
-        export http_proxy=${http_proxy}
-    fi
-    if [ -n "${https_proxy}" ]; then
-        export HTTPS_PROXY=${https_proxy}
-        export https_proxy=${https_proxy}
-    fi
-}
 
 do_install() {
     # Install libtim-vx.so into libdir
