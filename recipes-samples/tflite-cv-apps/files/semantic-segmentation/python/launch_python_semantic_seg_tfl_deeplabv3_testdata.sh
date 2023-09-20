@@ -2,7 +2,7 @@
 weston_user=$(ps aux | grep '/usr/bin/weston '|grep -v 'grep'|awk '{print $1}')
 
 source /usr/local/demo-ai/computer-vision/tflite-semantic-segmentation/python/resources/config_board.sh
-cmd="python3 /usr/local/demo-ai/computer-vision/tflite-semantic-segmentation/python/sem_seg_tfl.py -m /usr/local/demo-ai/computer-vision/models/deeplabv3/deeplabv3_quant.tflite -l /usr/local/demo-ai/computer-vision/models/deeplabv3/labelmap.txt -i /usr/local/demo-ai/computer-vision/models/deeplabv3/testdata/ $COMPUTE_ENGINE"
+cmd="python3 /usr/local/demo-ai/computer-vision/tflite-semantic-segmentation/python/sem_seg_tfl.py -m /usr/local/demo-ai/computer-vision/models/deeplabv3/deeplabv3_quant.tflite -l /usr/local/demo-ai/computer-vision/models/deeplabv3/labelmap.txt -i /usr/local/demo-ai/computer-vision/models/deeplabv3/testdata $COMPUTE_ENGINE"
 
 if [ "$weston_user" != "root" ]; then
 	echo "user : "$weston_user

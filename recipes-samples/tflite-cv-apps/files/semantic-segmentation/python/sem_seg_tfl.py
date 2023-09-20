@@ -85,29 +85,28 @@ class NeuralNetwork:
         self._input_mean = input_mean
         self._input_std = input_std
         self._floating_model = False
-        self._nn_finished = True
         self.first_inference_done = False
-        self.colors_map = np.array([(45,47,47),     #1 background
-                                    (3,35,75),      #2 aeroplane
-                                    (229,204,255),  #3 bicycle
-                                    (60,180,230),   #4 bird
-                                    (255,210,0),    #5 boat
-                                    (0,100,0),      #6 bottle
-                                    (100,56,0),     #7 bus
-                                    (52,0,100),     #8 car
-                                    (0,247,255),    #9 cat
-                                    (255,190,133),  #10 chair
-                                    (255,0,0),      #11 cow
-                                    (178,255,102),  #12 diningtable
-                                    (0,0,255),      #13 dog
-                                    (100, 0, 40),   #14 horse
-                                    (210,105,30),   #15 motorbike
-                                    (230,0,126),    #16 person
-                                    (204,204,0),    #17 pottedplant
-                                    (87,74,44),     #18 sheep
-                                    (255,128,0),    #19 sofa
-                                    (255,255,255),  #20 train
-                                    (0,255,34)])    #21 tv
+        self.colors_map = np.array([(0,0,0,0),          #1 background
+                                    (3,35,75,180),      #2 airplane
+                                    (229,204,255,180),  #3 bicycle
+                                    (60,180,230,180),   #4 bird
+                                    (255,210,0,180),    #5 boat
+                                    (0,100,0,180),      #6 bottle
+                                    (100,56,0,180),     #7 bus
+                                    (52,0,100,180),     #8 car
+                                    (0,247,255,180),    #9 cat
+                                    (255,190,133,180),  #10 chair
+                                    (255,0,0,180),      #11 cow
+                                    (178,255,102,180),  #12 dining table
+                                    (0,0,255,180),      #13 dog
+                                    (100, 0, 40,180),   #14 horse
+                                    (210,105,30,180),   #15 motorbike
+                                    (230,0,126,180),    #16 person
+                                    (204,204,0,180),    #17 potted plant
+                                    (87,74,44,180),     #18 sheep
+                                    (255,128,0,180),    #19 sofa
+                                    (255,255,255,180),  #20 train
+                                    (0,255,34,180)])    #21 tv
 
         if npu is True:
             if path.exists(LIBVX_PATH) :
@@ -335,9 +334,7 @@ class GstWidget(Gtk.Box):
 
     def msg_application_cb(self, bus, message):
         if message.get_structure().get_name() == 'inference-done':
-            self.app.nn._nn_finished = True
-            if(self.app.loading_nn):
-                self.app.loading_nn = False
+            self.app.draw_inference = True
             self.app.update_ui()
 
     def update_isp_config(self):
@@ -389,24 +386,24 @@ class GstWidget(Gtk.Box):
         recover video frame from appsink
         and run inference
         """
-        global image_arr
         sample = self.appsink.emit("pull-sample")
         arr = self.gst_to_opencv(sample)
-        if (arr is not None) and (self.app.nn._nn_finished) :
+        self.last_picture = arr.copy()
+        self.cpt_frame += 1
+        if self.cpt_frame == 60:
+            self.cpt_frame = 0
             self.update_isp_config()
-            self.cpt_frame += 1
-            if self.cpt_frame == 30:
-                self.cpt_frame = 0
-            self.app.nn._nn_finished = False
-            start_time = timer()
-            self.nn.launch_inference(arr)
-            stop_time = timer()
-            self.app.nn_inference_time = stop_time - start_time
-            self.app.nn_inference_fps = (1000/(self.app.nn_inference_time*1000))
-            self.app.unique_label, self.app.nn_seg_map = self.nn.get_results()
-            struc = Gst.Structure.new_empty("inference-done")
-            msg = Gst.Message.new_application(None, struc)
-            self.bus.post(msg)
+        if (args.validation):
+            if (arr is not None):
+                start_time = timer()
+                self.nn.launch_inference(arr)
+                stop_time = timer()
+                self.app.nn_inference_time = stop_time - start_time
+                self.app.nn_inference_fps = (1000/(self.app.nn_inference_time*1000))
+                self.app.unique_label, self.app.nn_seg_map = self.app.nn.get_results()
+                struc = Gst.Structure.new_empty("inference-done")
+                msg = Gst.Message.new_application(None, struc)
+                self.bus.post(msg)
         return Gst.FlowReturn.OK
 
     def get_fps_display(self,fpsdisplaysink,fps,droprate,avgfps):
@@ -448,6 +445,8 @@ class MainWindow(Gtk.Window):
         self.ui_icon_exit_height = '50'
         self.ui_icon_st_width = '130'
         self.ui_icon_st_height = '160'
+        self.ui_icon_label_width = '64'
+        self.ui_icon_label_height = '64'
         if window_constraint <= 272:
                # Display 480x272
                self.ui_cairo_font_size = 11
@@ -456,6 +455,8 @@ class MainWindow(Gtk.Window):
                self.ui_icon_exit_height = '25'
                self.ui_icon_st_width = '42'
                self.ui_icon_st_height = '52'
+               self.ui_icon_label_width = '32'
+               self.ui_icon_label_height = '32'
         elif window_constraint <= 600:
                #Display 800x480
                #Display 1024x600
@@ -465,6 +466,8 @@ class MainWindow(Gtk.Window):
                self.ui_icon_exit_height = '50'
                self.ui_icon_st_width = '65'
                self.ui_icon_st_height = '80'
+               self.ui_icon_label_width = '64'
+               self.ui_icon_label_height = '64'
         elif window_constraint <= 720:
                #Display 1280x720
                self.ui_cairo_font_size = 23
@@ -473,6 +476,8 @@ class MainWindow(Gtk.Window):
                self.ui_icon_exit_height = '50'
                self.ui_icon_st_width = '130'
                self.ui_icon_st_height = '160'
+               self.ui_icon_label_width = '64'
+               self.ui_icon_label_height = '64'
         elif window_constraint <= 1080:
                #Display 1920x1080
                self.ui_cairo_font_size = 33
@@ -481,6 +486,8 @@ class MainWindow(Gtk.Window):
                self.ui_icon_exit_height = '50'
                self.ui_icon_st_width = '130'
                self.ui_icon_st_height = '160'
+               self.ui_icon_label_width = '64'
+               self.ui_icon_label_height = '64'
 
     def main_ui_creation(self,args):
         """
@@ -520,9 +527,22 @@ class MainWindow(Gtk.Window):
             self.info_box.pack_start(self.st_icon_event,False,False,2)
             self.inf_time = Gtk.Label()
             self.inf_time.set_justify(Gtk.Justification.CENTER)
-            self.info_box.pack_start(self.inf_time,False,False,2)
-            info_sstr = "  disp.fps :     " + "\n" + "  inf.fps :     " + "\n" + "  inf.time :     " + "\n"
+            self.info_box.pack_start(self.inf_time,False,False,10)
+            info_sstr = "    disp.fps :      " + "\n" + "  inf.fps :     " + "\n" + "  inf.time :    " + "\n"
             self.inf_time.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>%s\n</b></span>" % (self.ui_cairo_font_size,info_sstr))
+            self.labels_to_display = Gtk.Label()
+            self.labels_to_display.set_justify(Gtk.Justification.CENTER)
+            self.info_box.pack_start(self.labels_to_display,False,False,2)
+            self.rules = Gtk.Label()
+            self.rules.set_justify(Gtk.Justification.CENTER)
+            self.info_box.pack_start(self.rules,False,False,10)
+            rules_sstr = " Click on " + "\n" + " camera preview " + "\n" + " to run " + "\n" + " segmentation " + "\n"
+            self.rules.set_markup("<span font=\'%d\' color='#000000'><b>%s\n</b></span>" % (self.ui_cairo_font_size,rules_sstr))
+            self.label_icon_path = RESOURCES_DIRECTORY + 'label_icon_' + self.ui_icon_label_width + 'x' + self.ui_icon_label_height + '.png'
+            self.label_icon = Gtk.Image.new_from_file(self.label_icon_path)
+            self.label_icon_event = Gtk.EventBox()
+            self.label_icon_event.add(self.label_icon)
+            self.info_box.pack_start(self.label_icon_event,False,False,10)
         else :
             # still picture mode
             self.info_box = Gtk.VBox()
@@ -537,6 +557,14 @@ class MainWindow(Gtk.Window):
             self.info_box.pack_start(self.inf_time,False,False,2)
             info_sstr = "  inf.fps :     " + "\n" + "  inf.time :     " + "\n"
             self.inf_time.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>%s\n</b></span>" % (self.ui_cairo_font_size,info_sstr))
+            self.labels_to_display = Gtk.Label()
+            self.labels_to_display.set_justify(Gtk.Justification.CENTER)
+            self.info_box.pack_start(self.labels_to_display,False,False,2)
+            self.label_icon_path = RESOURCES_DIRECTORY + 'label_icon_' + self.ui_icon_label_width + 'x' + self.ui_icon_label_height + '.png'
+            self.label_icon = Gtk.Image.new_from_file(self.label_icon_path)
+            self.label_icon_event = Gtk.EventBox()
+            self.label_icon_event.add(self.label_icon)
+            self.info_box.pack_start(self.label_icon_event,False,False,2)
 
         # setup video box containing gst stream in camera previex mode
         # and a openCV picture in still picture mode
@@ -552,7 +580,7 @@ class MainWindow(Gtk.Window):
             # still picture => openCV picture
             self.image = Gtk.Image()
             self.video_box.pack_start(self.image, True, True, 0)
-        # setup the exit box which contains the exit button
+        # # setup the exit box which contains the exit button
         self.exit_box = Gtk.VBox()
         self.exit_box.set_name("gui_main_exit")
         self.exit_icon_path = RESOURCES_DIRECTORY + 'exit_' + self.ui_icon_exit_width + 'x' + self.ui_icon_exit_height + '.png'
@@ -601,6 +629,8 @@ class OverlayWindow(Gtk.Window):
         Gtk.Window.__init__(self)
         self.app = app
         self.overlay_ui_creation(args)
+        self.previous_touch_event = 0
+        self.display_help = False
 
     def exit_icon_cb(self,eventbox, event):
         """
@@ -608,6 +638,41 @@ class OverlayWindow(Gtk.Window):
         """
         self.destroy()
         Gtk.main_quit()
+
+    def label_icon_event_cb(self,eventbox, event):
+        """
+        Exit callback to close application
+        """
+        if event.type == Gdk.EventType.BUTTON_PRESS:
+            if (self.display_help):
+                self.display_help = False
+                self.app.update_ui()
+            else :
+                self.display_help = True
+                self.app.update_ui()
+
+
+    def touch_event_cb(self, widget, event):
+        """
+        Touch event callback to stop camera stream and run inference on last camera frame
+        """
+        if event.touch.type == Gdk.EventType.TOUCH_BEGIN:
+            state = self.app.gst_widget.pipeline.get_state(Gst.CLOCK_TIME_NONE)
+            if (state.state == Gst.State.PLAYING):
+                self.app.gst_widget.pipeline.set_state(Gst.State.PAUSED)
+                self.app.draw_inference=True
+                if (self.app.gst_widget.last_picture is not None):
+                    start_time = timer()
+                    self.app.nn.launch_inference(self.app.gst_widget.last_picture)
+                    stop_time = timer()
+                    self.app.nn_inference_time = stop_time - start_time
+                    self.app.nn_inference_fps = (1000/(self.app.nn_inference_time*1000))
+                    self.app.unique_label, self.app.nn_seg_map = self.app.nn.get_results()
+                self.app.update_ui()
+            elif (state.state == Gst.State.PAUSED):
+                self.app.gst_widget.pipeline.set_state(Gst.State.PLAYING)
+                self.app.draw_inference = False
+                self.app.update_ui()
 
     def set_ui_param(self):
         """
@@ -625,6 +690,8 @@ class OverlayWindow(Gtk.Window):
         self.ui_icon_exit_height = '50'
         self.ui_icon_st_width = '130'
         self.ui_icon_st_height = '160'
+        self.ui_icon_label_width = '64'
+        self.ui_icon_label_height = '64'
         if window_constraint <= 272:
                # Display 480x272
                self.ui_cairo_font_size = 11
@@ -633,6 +700,8 @@ class OverlayWindow(Gtk.Window):
                self.ui_icon_exit_height = '25'
                self.ui_icon_st_width = '42'
                self.ui_icon_st_height = '52'
+               self.ui_icon_label_width = '32'
+               self.ui_icon_label_height = '32'
         elif window_constraint <= 600:
                #Display 800x480
                #Display 1024x600
@@ -642,6 +711,8 @@ class OverlayWindow(Gtk.Window):
                self.ui_icon_exit_height = '50'
                self.ui_icon_st_width = '65'
                self.ui_icon_st_height = '80'
+               self.ui_icon_label_width = '64'
+               self.ui_icon_label_height = '64'
         elif window_constraint <= 720:
                #Display 1280x720
                self.ui_cairo_font_size = 23
@@ -650,6 +721,8 @@ class OverlayWindow(Gtk.Window):
                self.ui_icon_exit_height = '50'
                self.ui_icon_st_width = '130'
                self.ui_icon_st_height = '160'
+               self.ui_icon_label_width = '64'
+               self.ui_icon_label_height = '64'
         elif window_constraint <= 1080:
                #Display 1920x1080
                self.ui_cairo_font_size = 33
@@ -658,6 +731,8 @@ class OverlayWindow(Gtk.Window):
                self.ui_icon_exit_height = '50'
                self.ui_icon_st_width = '130'
                self.ui_icon_st_height = '160'
+               self.ui_icon_label_width = '64'
+               self.ui_icon_label_height = '64'
 
     def overlay_ui_creation(self,args):
         """
@@ -698,9 +773,23 @@ class OverlayWindow(Gtk.Window):
             self.info_box.pack_start(self.st_icon_event,False,False,2)
             self.inf_time = Gtk.Label()
             self.inf_time.set_justify(Gtk.Justification.CENTER)
-            self.info_box.pack_start(self.inf_time,False,False,2)
-            info_sstr = "  disp.fps :     " + "\n" + "  inf.fps :     " + "\n" + "  inf.time :     " + "\n"
+            self.info_box.pack_start(self.inf_time,False,False,10)
+            info_sstr = "    disp.fps :      " + "\n" + "  inf.fps :     " + "\n" + "  inf.time :    " + "\n"
             self.inf_time.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>%s\n</b></span>" % (self.ui_cairo_font_size,info_sstr))
+            self.labels_to_display = Gtk.Label()
+            self.labels_to_display.set_justify(Gtk.Justification.CENTER)
+            self.info_box.pack_start(self.labels_to_display,False,False,2)
+            self.rules = Gtk.Label()
+            self.rules.set_justify(Gtk.Justification.CENTER)
+            self.info_box.pack_start(self.rules,False,False,10)
+            rules_sstr = " Click on " + "\n" + " camera preview " + "\n" + " to run " + "\n" + " segmentation " + "\n"
+            self.rules.set_markup("<span font=\'%d\' color='#E6007E'><b>%s\n</b></span>" % (self.ui_cairo_font_size,rules_sstr))
+            self.label_icon_path = RESOURCES_DIRECTORY + 'label_icon_' + self.ui_icon_label_width + 'x' + self.ui_icon_label_height + '.png'
+            self.label_icon = Gtk.Image.new_from_file(self.label_icon_path)
+            self.label_icon_event = Gtk.EventBox()
+            self.label_icon_event.add(self.label_icon)
+            self.label_icon_event.connect("button_press_event",self.label_icon_event_cb)
+            self.info_box.pack_start(self.label_icon_event,False,False,10)
         else :
             # still picture mode
             self.info_box = Gtk.VBox()
@@ -716,6 +805,15 @@ class OverlayWindow(Gtk.Window):
             self.info_box.pack_start(self.inf_time,False,False,2)
             info_sstr = "  inf.fps :     " + "\n" + "  inf.time :     " + "\n"
             self.inf_time.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>%s\n</b></span>" % (self.ui_cairo_font_size,info_sstr))
+            self.labels_to_display = Gtk.Label()
+            self.labels_to_display.set_justify(Gtk.Justification.CENTER)
+            self.info_box.pack_start(self.labels_to_display,False,False,2)
+            self.label_icon_path = RESOURCES_DIRECTORY + 'label_icon_' + self.ui_icon_label_width + 'x' + self.ui_icon_label_height + '.png'
+            self.label_icon = Gtk.Image.new_from_file(self.label_icon_path)
+            self.label_icon_event = Gtk.EventBox()
+            self.label_icon_event.add(self.label_icon)
+            self.label_icon_event.connect("button_press_event",self.label_icon_event_cb)
+            self.info_box.pack_start(self.label_icon_event,False,False,2)
 
         # setup video box containing a transparent drawing area
         # to draw over the video stream
@@ -724,11 +822,13 @@ class OverlayWindow(Gtk.Window):
         self.video_box.set_app_paintable(True)
         self.drawing_area = Gtk.DrawingArea()
         self.drawing_area.connect("draw", self.drawing)
+        self.drawing_area.connect("touch-event", self.touch_event_cb)
+        self.drawing_area.add_events(Gdk.EventMask.TOUCH_MASK)
         self.drawing_area.set_name("overlay_draw")
         self.drawing_area.set_app_paintable(True)
         self.video_box.pack_start(self.drawing_area, True, True, 0)
 
-        # setup the exit box which contains the exit button
+        # # setup the exit box which contains the exit button
         self.exit_box = Gtk.VBox()
         self.exit_box.set_name("gui_overlay_exit")
         self.exit_icon_path = RESOURCES_DIRECTORY + 'exit_' + self.ui_icon_exit_width + 'x' + self.ui_icon_exit_height + '.png'
@@ -760,26 +860,15 @@ class OverlayWindow(Gtk.Window):
             self.draw = True
             if self.app.enable_camera_preview == False :
                 self.app.still_picture_next = True
+                self.app.draw_inference = True
                 if args.validation:
                     GLib.idle_add(self.app.process_picture)
                 else:
                     self.app.process_picture()
             return False
 
-        if (self.app.loading_nn):
-            # waiting screen
-            text = "Loading NN model"
-            cr.set_font_size(self.ui_cairo_font_size*3)
-            xbearing, ybearing, width, height, xadvance, yadvance = cr.text_extents(text)
-            cr.move_to((self.drawing_width/2-width/2),(self.drawing_height/2))
-            cr.text_path(text)
-            cr.set_source_rgb(0.012,0.137,0.294)
-            cr.fill_preserve()
-            cr.set_source_rgb(1, 1, 1)
-            cr.set_line_width(0.2)
-            cr.stroke()
-            return True
-        else :
+        if (self.app.draw_inference):
+            self.display_help = False
             #recover the widget size depending of the information to display
             self.drawing_width = widget.get_allocated_width()
             self.drawing_height = widget.get_allocated_height()
@@ -790,10 +879,10 @@ class OverlayWindow(Gtk.Window):
                 preview_height = self.drawing_height
                 preview_width =  preview_ratio * preview_height
                 if preview_width >= self.drawing_width:
-                   offset = 0
-                   preview_width = self.drawing_width
-                   preview_height = preview_width / preview_ratio
-                   vertical_offset = (self.drawing_height - preview_height)/2
+                    offset = 0
+                    preview_width = self.drawing_width
+                    preview_height = preview_width / preview_ratio
+                    vertical_offset = (self.drawing_height - preview_height)/2
                 else :
                     offset = (self.drawing_width - preview_width)/2
                     vertical_offset = 0
@@ -805,40 +894,66 @@ class OverlayWindow(Gtk.Window):
                 vertical_offset = (self.drawing_height - preview_height)/2
                 if args.validation:
                     self.app.still_picture_next = True
+                    self.app.draw_inference = True
 
             #load the segmentation bitmap as a picture
-            img = Image.fromarray(self.app.nn_seg_map)
+            img = Image.fromarray(self.app.nn_seg_map,'RGBA')
             size = (int(preview_width),int(preview_height))
             img = img.resize(size)
             img_alpha = img.copy()
-            #add alpha parameter and savec bitmap as png
-            img_alpha.putalpha(180)
             img_alpha.save("/home/weston/bitmap.png","PNG")
 
             #load the bitmap to display it as overlay
             pixbuf = GdkPixbuf.Pixbuf.new_from_file('/home/weston/bitmap.png')
             img = Gdk.cairo_set_source_pixbuf(cr, pixbuf.copy(),int(offset), int(vertical_offset))
             cr.paint()
-
-            #determine labels to display
-            labels = self.app.nn.get_labels()
-            label_map = np.arange(len(labels)).reshape(len(labels), 1)
-            color_map = self.app.nn.colors_map[label_map]
-
-            #display labels
-            for i in range(len(self.app.unique_label)):
-                label = labels[self.app.unique_label[i]]
-                text = str(label)
-                cr.set_font_size(self.ui_cairo_font_size*2)
-                xbearing, ybearing, width, height, xadvance, yadvance = cr.text_extents(text)
-                cr.move_to(offset+30,50+((10+height)*i))
-                cr.text_path(text)
-                cr.set_source_rgba(color_map[self.app.unique_label[i]][0][0]/255, color_map[self.app.unique_label[i]][0][1]/255, color_map[self.app.unique_label[i]][0][2]/255,0.9)
-                cr.fill_preserve()
-                cr.set_source_rgb(1, 1, 1)
-                cr.set_line_width(0.1)
-                cr.stroke()
-
+            if (self.app.enable_camera_preview == False):
+                self.app.draw_inference = False
+        else:
+            if (self.display_help):
+                cr.rectangle(0, 0, self.drawing_width, self.drawing_height)
+                cr.set_source_rgba(3,35,75,0.25)
+                cr.fill()
+                #determine labels to display
+                labels = self.app.nn.get_labels()
+                label_map = np.arange(len(labels)).reshape(len(labels), 1)
+                color_map = self.app.nn.colors_map[label_map]
+                offset_x = self.drawing_width/6
+                offset_y = self.drawing_height/8
+                #display labels
+                for i in range(len(labels)):
+                    if (i < 10):
+                        label = labels[i]
+                        text = str(label)
+                        cr.set_font_size(self.ui_cairo_font_size*2)
+                        xbearing, ybearing, width, height, xadvance, yadvance = cr.text_extents(text)
+                        cr.move_to(offset_x,offset_y+((self.ui_cairo_font_size*3)*i))
+                        cr.text_path(text)
+                        cr.set_source_rgba(color_map[i][0][0]/255, color_map[i][0][1]/255, color_map[i][0][2]/255,1)
+                        cr.fill_preserve()
+                        cr.set_source_rgb(1, 1, 1)
+                        cr.set_line_width(0.1)
+                        cr.stroke()
+                    else :
+                        label = labels[i]
+                        text = str(label)
+                        cr.set_font_size(self.ui_cairo_font_size*2)
+                        xbearing, ybearing, width, height, xadvance, yadvance = cr.text_extents(text)
+                        cr.move_to(3*offset_x,offset_y+((self.ui_cairo_font_size*3)*(i-10)))
+                        cr.text_path(text)
+                        cr.set_source_rgba(color_map[i][0][0]/255, color_map[i][0][1]/255, color_map[i][0][2]/255,1)
+                        cr.fill_preserve()
+                        cr.set_source_rgb(1, 1, 1)
+                        cr.set_line_width(0.1)
+                        cr.stroke()
+            else :
+                self.app.main_window.label_icon.show()
+                self.label_icon.show()
+                self.app.main_window.inf_time.hide()
+                self.inf_time.hide()
+                self.app.main_window.rules.show()
+                self.rules.show()
+                self.labels_to_display.hide()
         return True
 
     def still_picture(self,  widget, event):
@@ -846,6 +961,7 @@ class OverlayWindow(Gtk.Window):
         ST icon cb which trigger a new inference
         """
         self.app.still_picture_next = True
+        self.app.draw_inference = True
         return self.app.process_picture()
 
 class Application:
@@ -857,6 +973,7 @@ class Application:
         self.exit_app = False
         self.first_call = True
         self.loading_nn = True
+        self.draw_inference = False
         self.window_width = 0
         self.window_height = 0
         self.get_display_resolution()
@@ -957,7 +1074,7 @@ class Application:
         if timeout occurs that means that camera preview and the gtk is not
         behaving as expected */
         """
-        print("Timeout: camera preview and/or gtk is not behaving has expected\n");
+        print("Timeout: camera preview and/or gtk is not behaving has expected\n")
         Gtk.main_quit()
         os._exit(1)
 
@@ -1002,8 +1119,43 @@ class Application:
         str_inference_time = str("{0:0.1f}".format(inference_time)) + " ms"
         inference_fps = 1000/inference_time
         str_inference_fps = str("{0:.1f}".format(inference_fps)) + " fps"
-        info_sstr ="  inf.fps :     " + "\n" + str_inference_fps + "\n" + "  inf.time :     " + "\n"  + str_inference_time + "\n"
-        self.overlay_window.inf_time.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>%s\n</b></span>" % (self.main_window.ui_cairo_font_size,info_sstr))
+        #determine labels to display
+        labels = self.nn.get_labels()
+        label_map = np.arange(len(labels)).reshape(len(labels), 1)
+        color_map = self.nn.colors_map[label_map]
+        label_sstr = ""
+        if (self.draw_inference):
+            #display labels
+            for i in range(len(self.unique_label)):
+                if (i != 0):
+                    label = labels[self.unique_label[i]]
+                    text = str(label)
+                    R = hex(color_map[self.unique_label[i]][0][0])
+                    G = hex(color_map[self.unique_label[i]][0][1])
+                    B = hex(color_map[self.unique_label[i]][0][2])
+                    R = R.removeprefix('0x')
+                    G = G.removeprefix('0x')
+                    B = B.removeprefix('0x')
+                    R = R.upper()
+                    G = G.upper()
+                    B = B.upper()
+                    if (len(R)==1):
+                        R = "0" + R
+                    if (len(G)==1):
+                        G = "0" + G
+                    if (len(B)==1):
+                        B = "0" + B
+                    label_sstr += "<span font=\'" + str(self.overlay_window.ui_cairo_font_size) + "\' color='#" + str(R) + str(G) + str(B) + "'><b>" +  text + "\n</b></span>"
+            label_sstr = "<span font=\'" + str(self.overlay_window.ui_cairo_font_size) + "\' color='#FFFFFF'><b>Labels : \n</b></span>" + label_sstr
+            info_sstr = "  inf.fps :     " + "\n" + str_inference_fps + "\n" + "  inf.time :     " + "\n"  + str_inference_time + "\n"
+            self.overlay_window.inf_time.set_markup("<span font=\'%d\' color='#FFFFFF'><b>%s\n</b></span>" % (self.overlay_window.ui_cairo_font_size,info_sstr))
+            self.overlay_window.labels_to_display.set_markup(label_sstr)
+            self.main_window.label_icon.hide()
+            self.overlay_window.label_icon.hide()
+            self.main_window.inf_time.show()
+            self.overlay_window.inf_time.show()
+            self.overlay_window.labels_to_display.show()
+
 
     # Updating the labels and the inference infos displayed on the GUI interface - camera input
     def update_label_preview(self):
@@ -1022,9 +1174,43 @@ class Application:
         str_display_fps = str("{0:.1f}".format(display_fps)) + " fps"
         str_inference_fps = str("{0:.1f}".format(inference_fps)) + " fps"
 
-        info_sstr = "  disp.fps :     " + "\n" + str_display_fps + "\n" + "  inf.fps :     " + "\n" + str_inference_fps + "\n" + "  inf.time :     " + "\n"  + str_inference_time + "\n"
-
-        self.overlay_window.inf_time.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>%s\n</b></span>" % (self.overlay_window.ui_cairo_font_size,info_sstr))
+        #determine labels to display
+        labels = self.nn.get_labels()
+        label_map = np.arange(len(labels)).reshape(len(labels), 1)
+        color_map = self.nn.colors_map[label_map]
+        label_sstr = ""
+        if (self.draw_inference):
+            #display labels
+            for i in range(len(self.unique_label)):
+                if (i != 0):
+                    label = labels[self.unique_label[i]]
+                    text = str(label)
+                    R = hex(color_map[self.unique_label[i]][0][0])
+                    G = hex(color_map[self.unique_label[i]][0][1])
+                    B = hex(color_map[self.unique_label[i]][0][2])
+                    R = R.removeprefix('0x')
+                    G = G.removeprefix('0x')
+                    B = B.removeprefix('0x')
+                    R = R.upper()
+                    G = G.upper()
+                    B = B.upper()
+                    if (len(R)==1):
+                        R = "0" + R
+                    if (len(G)==1):
+                        G = "0" + G
+                    if (len(B)==1):
+                        B = "0" + B
+                    label_sstr += "<span font=\'" + str(self.overlay_window.ui_cairo_font_size) + "\' color='#" + str(R) + str(G) + str(B) + "'><b>" +  text + "\n</b></span>"
+            label_sstr = "<span font=\'" + str(self.overlay_window.ui_cairo_font_size) + "\' color='#FFFFFF'><b>Labels : \n</b></span>" + label_sstr
+            info_sstr = "  inf.fps :     " + "\n" + str_inference_fps + "\n" + "      inf.time :        " + "\n"  + str_inference_time + "\n"
+            self.overlay_window.inf_time.set_markup("<span font=\'%d\' color='#FFFFFF'><b>%s\n</b></span>" % (self.overlay_window.ui_cairo_font_size,info_sstr))
+            self.overlay_window.labels_to_display.set_markup(label_sstr)
+            self.overlay_window.rules.hide()
+            self.main_window.label_icon.hide()
+            self.overlay_window.label_icon.hide()
+            self.main_window.inf_time.show()
+            self.overlay_window.inf_time.show()
+            self.overlay_window.labels_to_display.show()
 
         if args.validation:
             # reload the timeout
@@ -1054,8 +1240,9 @@ class Application:
         if self.exit_app:
             Gtk.main_quit()
             return False
-
+        print("process picture enterred")
         if self.still_picture_next and self.overlay_window.draw :
+            print("get a random file")
             # get randomly a picture in the directory
             rfile = self.getRandomFile(args.image)
             img = Image.open(args.image + "/" + rfile)
@@ -1107,6 +1294,7 @@ class Application:
 
             if args.validation and inference_time != 0:
                 # reload the timeout
+                self.draw_inference = True
                 GLib.source_remove(self.valid_timeout_id)
                 self.valid_timeout_id = GLib.timeout_add(50000,
                                                         self.valid_timeout_callback)
@@ -1114,9 +1302,8 @@ class Application:
                 #prepare inference results to compare with validation results
                 np_array_seg = self.nn_seg_map.copy()
                 np_array_seg = np.transpose(np_array_seg,(2,0,1))
-                np_array_seg = np_array_seg.reshape(3,-1)
+                np_array_seg = np_array_seg.reshape(4,-1)
                 np_array_seg = np.asarray(np_array_seg)
-
                 #  get file path without extension
                 file_name_no_ext = os.path.splitext(rfile)[0]
 
@@ -1125,11 +1312,9 @@ class Application:
                 input_file = args.image + "/" + file_name_no_ext
                 # retreive associated CSV file information
                 seg_map_expected = self.load_valid_results_from_csv_file(input_file)
-
                 if not(np.array_equal(seg_map_expected,np_array_seg)):
                     print("Inference result mismatch")
                     os._exit(1)
-
                 self.valid_inference_time.append(round(self.nn_inference_time * 1000, 4))
 
                 # process all the file
