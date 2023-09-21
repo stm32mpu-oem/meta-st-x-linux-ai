@@ -4,8 +4,9 @@ SUMMARY = "Create package containing deeplabv3 models used for the semantic segm
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/Apache-2.0;md5=89aea4e17d99a7cacdbeed46a0096b10"
 
-SRC_URI = "file://deeplabv3_quant.tflite "
-SRC_URI += "file://labelmap.txt "
+SRC_URI =   "file://deeplabv3_quant.tflite "
+SRC_URI +=  "file://deeplabv3.nb "
+SRC_URI +=  "file://labelmap.txt "
 
 S = "${WORKDIR}"
 
@@ -19,6 +20,7 @@ do_install() {
     # install deeplabv3 model
     install -m 0644 ${S}/label*.txt                       ${D}${prefix}/local/demo-ai/computer-vision/models/deeplabv3/labelmap.txt
     install -m 0644 ${S}/deeplabv3_quant.tflite           ${D}${prefix}/local/demo-ai/computer-vision/models/deeplabv3/
+    install -m 0644 ${S}/deeplabv3.nb                     ${D}${prefix}/local/demo-ai/computer-vision/models/deeplabv3/
 }
 
 FILES:${PN} += "${prefix}/local/"

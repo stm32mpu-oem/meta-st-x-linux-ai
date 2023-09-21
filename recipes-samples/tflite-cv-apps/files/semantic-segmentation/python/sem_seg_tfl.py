@@ -122,7 +122,7 @@ class NeuralNetwork:
 
         if self._selected_delegate is not None:
             vx_delegate = tflr.load_delegate( library=self._selected_delegate,
-                                                options={"cache_file_path": "/home/weston/deeplabv3.nb", "allowed_cache_mode":"true"})
+                                                options={"cache_file_path": "/usr/local/demo-ai/computer-vision/models/deeplabv3/deeplabv3.nb", "allowed_cache_mode":"true"})
             print('Loading external delegate from {}'.format(self._selected_delegate))
             print("number of threads used in tflite interpreter : ",self.number_threads)
             self._interpreter = tflr.Interpreter(model_path=self._model_file,
