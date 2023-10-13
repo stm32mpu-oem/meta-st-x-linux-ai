@@ -13,7 +13,7 @@ PROVIDES = "${PACKAGES}"
 PACKAGES = "\
     packagegroup-x-linux-ai                  \
     packagegroup-x-linux-ai-tflite           \
-    packagegroup-x-linux-ai-tflite-edgetpu   \
+    packagegroup-x-linux-ai-coral   \
     packagegroup-x-linux-ai-onnxruntime      \
 "
 
@@ -22,7 +22,7 @@ PACKAGES:append:stm32mp25common = " packagegroup-x-linux-ai-npu"
 # Manage to provide all framework tools base packages with overall one
 RDEPENDS:packagegroup-x-linux-ai = "\
     packagegroup-x-linux-ai-tflite           \
-    packagegroup-x-linux-ai-tflite-edgetpu   \
+    packagegroup-x-linux-ai-coral   \
     packagegroup-x-linux-ai-onnxruntime      \
 "
 RDEPENDS:packagegroup-x-linux-ai:append:stm32mp25common = " packagegroup-x-linux-ai-npu"
@@ -33,32 +33,32 @@ RDEPENDS:packagegroup-x-linux-ai-tflite = "\
     tensorflow-lite-tools \
     tensorflow-lite \
     x-linux-ai-tool \
-    tflite-cv-apps-image-classification-c++ \
-    tflite-cv-apps-image-classification-python \
-    tflite-cv-apps-object-detection-c++ \
-    tflite-cv-apps-object-detection-python \
+    tflite-image-classification-cpp \
+    tflite-image-classification-python \
+    tflite-object-detection-cpp \
+    tflite-object-detection-python \
 "
 
 RDEPENDS:packagegroup-x-linux-ai-tflite:append:stm32mp25common = "\
     tim-vx \
     tflite-vx-delegate \
-    tflite-cv-apps-pose-estimation-python \
-    tflite-cv-apps-semantic-segmentation-python \
+    tflite-pose-estimation-python \
+    tflite-semantic-segmentation-python \
 "
 
-SUMMARY:packagegroup-x-linux-ai-tflite-edgetpu = "X-LINUX-AI TensorFlow Lite Edge TPU components"
-RDEPENDS:packagegroup-x-linux-ai-tflite-edgetpu = "\
+SUMMARY:packagegroup-x-linux-ai-coral = "X-LINUX-AI TensorFlow Lite Edge TPU components"
+RDEPENDS:packagegroup-x-linux-ai-coral = "\
     libedgetpu \
     libcoral \
     python3-pycoral \
     python3-tensorflow-lite \
     tensorflow-lite \
     x-linux-ai-tool \
-    tflite-edgetpu-benchmark \
-    tflite-cv-apps-edgetpu-image-classification-c++ \
-    tflite-cv-apps-edgetpu-image-classification-python \
-    tflite-cv-apps-edgetpu-object-detection-c++ \
-    tflite-cv-apps-edgetpu-object-detection-python \
+    coral-edgetpu-benchmark \
+    coral-image-classification-cpp \
+    coral-image-classification-python \
+    coral-object-detection-cpp \
+    coral-object-detection-python \
 "
 
 SUMMARY:packagegroup-x-linux-ai-onnxruntime = "X-LINUX-AI ONNX Runtime components"
@@ -67,11 +67,11 @@ RDEPENDS:packagegroup-x-linux-ai-onnxruntime = "\
     onnxruntime-tools \
     python3-onnxruntime \
     x-linux-ai-tool \
-    onnx-models-mobilenet \
+    onnx-models-mobilenetv1 \
     onnx-models-coco-ssd-mobilenetv1 \
-    onnx-cv-apps-image-classification-python \
-    onnx-cv-apps-object-detection-python \
-    onnx-cv-apps-object-detection-c++ \
+    onnx-image-classification-python \
+    onnx-object-detection-python \
+    onnx-object-detection-cpp \
 "
 
 SUMMARY:packagegroup-x-linux-ai-npu = "X-LINUX-AI minimum NPU components"
@@ -79,6 +79,6 @@ RDEPENDS:packagegroup-x-linux-ai-npu += "\
     tim-vx \
     tim-vx-tools \
     nbg-benchmark \
-    nbg-cv-apps-image-classificaton-c++ \
+    nbg-image-classification-cpp \
     nbg-models-mobilenetv1 \
 "
