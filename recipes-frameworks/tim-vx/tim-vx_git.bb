@@ -16,6 +16,7 @@ SRCREV_googletest = "eab0e7e289db13eabfc246809b0284dac02a369d"
 SRC_URI +="git://github.com/google/googletest;branch=${SRCBRANCH_googletest};name=googletest;destsuffix=googletest/;protocol=https "
 
 PV = "1.1.57+git${SRCREV_tim_vx}"
+PV_googletest = "1.14.0"
 
 S = "${WORKDIR}/tim_vx_git"
 
@@ -67,8 +68,8 @@ do_install() {
     ln -sf libtim-vx.so.${PVB} ${D}${libdir}/libtim-vx.so
 
     # Install other libraries for benchmark
-    install -m 0755 ${WORKDIR}/build/lib/libgtest_main.so ${D}${libdir}/libgtest_main.so.1.11.0
-    install -m 0755 ${WORKDIR}/build/lib/libgtest.so      ${D}${libdir}/libgtest.so.1.11.0
+    install -m 0755 ${WORKDIR}/build/lib/libgtest_main.so ${D}${libdir}/libgtest_main.so.${PV_googletest}
+    install -m 0755 ${WORKDIR}/build/lib/libgtest.so      ${D}${libdir}/libgtest.so.${PV_googletest}
     install -m 0755 ${WORKDIR}/build/lib/libgmock_main.so ${D}${libdir}/libgmock_main.so
     install -m 0755 ${WORKDIR}/build/lib/libgmock.so      ${D}${libdir}/libgmock.so
     install -m 0755 ${WORKDIR}/build/src/tim/unit_test    ${D}/usr/local/bin/${PN}-${PVB}/TIM-VX_test
@@ -86,8 +87,8 @@ FILES_SOLIBSDEV = ""
 FILES:${PN}-tools = "   /usr/local/bin/${PN}-${PVB}/TIM-VX_test \
 			/usr/local/bin/${PN}-${PVB}/cl_viv_vx_ext.h \
 			/home/weston/cl_viv_vx_ext.h \
-			${libdir}/libgtest_main.so.1.11.0 \
-			${libdir}/libgtest.so.1.11.0 \
+			${libdir}/libgtest_main.so.${PV_googletest} \
+			${libdir}/libgtest.so.${PV_googletest} \
 			${libdir}/libgmock_main.so \
 			${libdir}/libgmock.so \
 "
