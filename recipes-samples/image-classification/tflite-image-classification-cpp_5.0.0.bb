@@ -38,11 +38,15 @@ do_install() {
     install -d ${D}${prefix}/local/demo-ai/image-classification/tflite
 
     # install applications into the demo launcher
-    install -m 0755 ${S}/tflite/101-tflite-image-classification-C++.yaml	${D}${prefix}/local/demo/application
+    install -m 0755 ${S}/tflite/101-tflite-image-classification-cpp.yaml	${D}${prefix}/local/demo/application
 
     # install application binaries and launcher scripts
     install -m 0755 ${S}/tflite/tflite_image_classification    ${D}${prefix}/local/demo-ai/image-classification/tflite
     install -m 0755 ${S}/tflite/launch_bin*.sh		           ${D}${prefix}/local/demo-ai/image-classification/tflite
+}
+
+do_install:append:stm32mp25common(){
+    install -m 0755 ${S}/tflite/101-tflite-image-classification-cpp-mp2.yaml	${D}${prefix}/local/demo/application/101-tflite-image-classification-cpp.yaml
 }
 
 FILES:${PN} += "${prefix}/local/"
@@ -61,7 +65,6 @@ RDEPENDS:${PN} += " \
 	libopencv-imgproc \
 	libopencv-imgcodecs \
 	tensorflow-lite \
-	tflite-models-mobilenetv1 \
     application-resources \
 	bash \
 "
@@ -69,3 +72,6 @@ RDEPENDS:${PN} += " \
 #Depending of the Gstreamer version supported by the Yocto version the RDEPENDS differs
 RDEPENDS:${PN} += "${@bb.utils.contains('DISTRO_CODENAME', 'kirkstone', ' gstreamer1.0-plugins-base-videoscale gstreamer1.0-plugins-base-videoconvert ', ' gstreamer1.0-plugins-base-videoconvertscale ',  d)}"
 RDEPENDS:${PN}:append:stm32mp25common = " tflite-vx-delegate "
+RDEPENDS:${PN}:append:stm32mp25common = " tflite-models-mobilenetv3 "
+RDEPENDS:${PN}:append:stm32mp25common = " nbg-models-mobilenetv3 "
+RDEPENDS:${PN}:append:stm32mp1common  = " tflite-models-mobilenetv1 "

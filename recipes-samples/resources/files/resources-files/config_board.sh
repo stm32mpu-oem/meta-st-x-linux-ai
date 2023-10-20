@@ -12,6 +12,8 @@ if [[ "$COMPATIBLE" == *"$STM32MP135"* ]]; then
   DHEIGHT=240
   DFPS=10
   COMPUTE_ENGINE=""
+  IMAGE_CLASSIFICATION_MODEL="mobilenet_v1_0.5_128_quant"
+  IMAGE_CLASSIFICATION_LABEL="labels"
 fi
 
 if [[ "$COMPATIBLE" == *"$STM32MP157"* ]]; then
@@ -21,12 +23,16 @@ if [[ "$COMPATIBLE" == *"$STM32MP157"* ]]; then
     DHEIGHT=240
     DFPS=15
     COMPUTE_ENGINE=""
+    IMAGE_CLASSIFICATION_MODEL="mobilenet_v1_0.5_128_quant"
+    IMAGE_CLASSIFICATION_LABEL="labels"
   else
     MACHINE=$STM32MP157
     DWIDTH=640
     DHEIGHT=480
     DFPS=15
     COMPUTE_ENGINE=""
+    IMAGE_CLASSIFICATION_MODEL="mobilenet_v1_0.5_128_quant"
+    IMAGE_CLASSIFICATION_LABEL="labels"
   fi
 fi
 
@@ -36,6 +42,8 @@ if [[ "$COMPATIBLE" == *"$STM32MP257"* ]]; then
   DHEIGHT=480
   DFPS=30
   COMPUTE_ENGINE="--npu"
+  IMAGE_CLASSIFICATION_MODEL="mobilenet_v3_large_100_224_quant"
+  IMAGE_CLASSIFICATION_LABEL="labels_mobilenet_v3"
 fi
 
 echo "machine used = "$MACHINE

@@ -18,8 +18,12 @@ do_install() {
     install -m 0755 ${S}/tflite/100-tflite-image-classification-python.yaml	${D}${prefix}/local/demo/application
 
     # install application binaries and launcher scripts
-    install -m 0755 ${S}/tflite/tflite_image_classification.py     ${D}${prefix}/local/demo-ai/image-classification/tflite
+    install -m 0755 ${S}/tflite/tflite_image_classification.py         ${D}${prefix}/local/demo-ai/image-classification/tflite
     install -m 0755 ${S}/tflite/launch_python*.sh		               ${D}${prefix}/local/demo-ai/image-classification/tflite
+}
+
+do_install:append:stm32mp25common(){
+    install -m 0755 ${S}/tflite/100-tflite-image-classification-python-mp2.yaml	${D}${prefix}/local/demo/application/100-tflite-image-classification-python.yaml
 }
 
 FILES:${PN} += "${prefix}/local/"
@@ -31,7 +35,11 @@ RDEPENDS:${PN} += " \
 	python3-pillow \
 	python3-pygobject \
 	python3-tensorflow-lite \
-	tflite-models-mobilenetv1 \
     application-resources \
 	bash \
 "
+
+RDEPENDS:${PN}:append:stm32mp25common = " tflite-vx-delegate "
+RDEPENDS:${PN}:append:stm32mp25common = " tflite-models-mobilenetv3 "
+RDEPENDS:${PN}:append:stm32mp25common = " nbg-models-mobilenetv3 "
+RDEPENDS:${PN}:append:stm32mp1common  = " tflite-models-mobilenetv1 "

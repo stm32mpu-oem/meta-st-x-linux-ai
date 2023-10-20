@@ -78,6 +78,7 @@ class NeuralNetwork:
             return my_labels
 
         self._model_file = model_file
+        print("NN model used : ", self._model_file)
         self._label_file = label_file
         self._input_mean = input_mean
         self._input_std = input_std
@@ -124,11 +125,13 @@ class NeuralNetwork:
                 print("No delegate ",ext_delegate, "found fall back on CPU mode")
 
         if self._selected_delegate is not None:
+            vx_delegate = tflr.load_delegate( library=self._selected_delegate,
+                                                options={"cache_file_path": "/usr/local/demo-ai/image-classification/models/mobilenet/mobilenet_v3_large_100_224_quant.nb", "allowed_cache_mode":"true"})
             print('Loading external delegate from {}'.format(self._selected_delegate))
             print("number of threads used in tflite interpreter : ",self.number_threads)
             self._interpreter = tflr.Interpreter(model_path=self._model_file,
                                                  num_threads = self.number_threads,
-                                                 experimental_delegates=[tflr.load_delegate(self._selected_delegate)])
+                                                 experimental_delegates=[vx_delegate])
         else :
             print("no delegate to use, CPU mode activated")
             print("number of threads used in tflite interpreter : ",self.number_threads)
@@ -1105,7 +1108,7 @@ class Application:
                 else :
                     self.valid_inference_time.append(round(self.nn_inference_time * 1000, 4))
                 print("name extract from the picture file: {0:32} label {1}".format(file_name, str(label)))
-                if file_name != str(label):
+                if label not in file_name :
                     print("Inference result mismatch the file name")
                     self.destroy()
                     os._exit(1)

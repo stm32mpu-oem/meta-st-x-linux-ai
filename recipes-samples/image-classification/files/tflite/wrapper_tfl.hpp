@@ -187,6 +187,8 @@ namespace wrapper_tfl {
 			if(m_accel) {
 				const char * delegate_path = m_external_delegate_path;
 				auto ext_delegate_option = TfLiteExternalDelegateOptionsDefault(delegate_path);
+				ext_delegate_option.insert(&ext_delegate_option, "cache_file_path", "/usr/local/demo-ai/image-classification/models/mobilenet/mobilenet_v3_large_100_224_quant.nb");
+				ext_delegate_option.insert(&ext_delegate_option, "allowed_cache_mode", "true");
 				auto ext_delegate_ptr = TfLiteExternalDelegateCreate(&ext_delegate_option);
 				interpreter->ModifyGraphWithDelegate(ext_delegate_ptr);
 			}

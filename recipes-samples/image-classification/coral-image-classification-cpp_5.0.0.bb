@@ -34,7 +34,7 @@ do_install() {
     install -d ${D}${prefix}/local/demo-ai/image-classification/coral/
 
     # install applications into the demo launcher
-    install -m 0755 ${S}/tflite/111-coral-image-classification-C++.yaml	${D}${prefix}/local/demo/application
+    install -m 0755 ${S}/tflite/111-coral-image-classification-cpp.yaml	${D}${prefix}/local/demo/application
 
     # install application binaries and launcher scripts
     install -m 0755 ${S}/tflite/tflite_image_classification        ${D}${prefix}/local/demo-ai/image-classification/coral/coral_image_classification

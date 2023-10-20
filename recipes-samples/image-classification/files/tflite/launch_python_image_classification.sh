@@ -2,7 +2,7 @@
 weston_user=$(ps aux | grep '/usr/bin/weston '|grep -v 'grep'|awk '{print $1}')
 
 source /usr/local/demo-ai/resources/config_board.sh
-cmd="python3 /usr/local/demo-ai/image-classification/tflite/tflite_image_classification.py -m /usr/local/demo-ai/image-classification/models/mobilenet/mobilenet_v1_0.5_128_quant.tflite -l /usr/local/demo-ai/image-classification/models/mobilenet/labels.txt --framerate $DFPS --frame_width $DWIDTH --frame_height $DHEIGHT $COMPUTE_ENGINE"
+cmd="python3 /usr/local/demo-ai/image-classification/tflite/tflite_image_classification.py -m /usr/local/demo-ai/image-classification/models/mobilenet/$IMAGE_CLASSIFICATION_MODEL.tflite -l /usr/local/demo-ai/image-classification/models/mobilenet/$IMAGE_CLASSIFICATION_LABEL.txt --framerate $DFPS --frame_width $DWIDTH --frame_height $DHEIGHT $COMPUTE_ENGINE"
 
 if [ "$weston_user" != "root" ]; then
 	echo "user : "$weston_user
