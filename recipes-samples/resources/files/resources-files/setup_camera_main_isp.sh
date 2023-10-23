@@ -32,10 +32,6 @@ function is_dcmipp_present() {
 					sensordev=$(media-ctl -d $mediadev -p -e "$sensorsubdev" | grep "node name" | awk -F\name '{print $2}')
 					#interface is connected to input of isp (":1 [ENABLED" with media-ctl -p)
 					interfacesubdev=$(media-ctl -d $mediadev -p -e "dcmipp_main_isp" | grep ":1 \[ENABLED" | awk -F\" '{print $2}')
-					echo "mediadev="$mediadev
-					echo "sensorsubdev=\""$sensorsubdev\"
-					echo "sensordev="$sensordev
-					echo "interfacesubdev="$interfacesubdev
 					return
 				fi
 			done
@@ -80,10 +76,6 @@ if [ "$DEVICE" != "" ]; then
 				sensordev=$(media-ctl -d $mediadev -p -e "$sensorsubdev" | grep "node name" | awk -F\name '{print $2}')
 				#interface is connected to input of isp (":1 [ENABLED" with media-ctl -p)
 				interfacesubdev=$(media-ctl -d $mediadev -p -e "dcmipp_main_isp" | grep ":1 \[ENABLED" | awk -F\" '{print $2}')
-				echo "mediadev="$mediadev
-				echo "sensorsubdev=\""$sensorsubdev\"
-				echo "sensordev="$sensordev
-				echo "interfacesubdev="$interfacesubdev
 			fi
 		done
 	else
@@ -103,7 +95,6 @@ fi
 if [ "$DCMIPP_SENSOR" != "NOTFOUND" ]; then
 	#Use sensor in raw-bayer format
 	sensorbuscode=`v4l2-ctl --list-subdev-mbus-codes -d $sensordev | grep SRGGB | awk -FMEDIA_BUS_FMT_ '{print $2}'`
-	echo "sensorbuscode="$sensorbuscode
 
 	if [ "$DCMIPP_SENSOR" = "ov5640" ]; then
 		#OV5640 only support 720p with raw-bayer format
@@ -122,8 +113,6 @@ if [ "$DCMIPP_SENSOR" != "NOTFOUND" ]; then
 	sensorfmt=`media-ctl -d $mediadev --get-v4l2 "'$sensorsubdev':0" | awk -F"fmt:" '{print $2}' | awk -F" " '{print $1}'`
 	SENSORWIDTH=`echo $sensorfmt | awk -F"/" '{print $2}' | awk -F"x" '{print $1}'`
 	SENSORHEIGHT=`echo $sensorfmt | awk -F"/" '{print $2}' | awk -F"x" '{print $2}' | awk -F" " '{print $1}' | awk -F"@" '{print $1}'`
-	echo "SENSORWIDTH="$SENSORWIDTH
-	echo "SENSORHEIGHT="$SENSORHEIGHT
 
     #Use main pipe for debayering, scaling and color conversion
 	echo "Mediacontroller graph:"

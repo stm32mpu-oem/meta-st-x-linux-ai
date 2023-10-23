@@ -19,11 +19,6 @@ is_dcmipp_present() {
                     sensordev=$(media-ctl -d $mediadev -p -e "$sensorsubdev" | grep "node name" | awk -F\name '{print $2}')
                     #interface is connected to input of isp (":1 [ENABLED" with media-ctl -p)
                     interfacesubdev=$(media-ctl -d $mediadev -p -e "dcmipp_main_isp" | grep ":1 \[ENABLED" | awk -F\" '{print $2}')
-                    echo "mediadev="$mediadev
-                    echo "sensorsubdev=\""$sensorsubdev\"
-                    echo "sensordev="$sensordev
-                    echo "interfacesubdev="$interfacesubdev
-
                     return
                 fi
             done
@@ -48,9 +43,8 @@ get_webcam_device() {
 
 # camera detection
 # detect if we have a ov5640 or imx335 plugged and associated to dcmipp
-echo "check camera"
+echo "check if a CSI or USB camera is connected"
 is_dcmipp_present
-echo "is_dcmipp_present"
 if [ "$DCMIPP_SENSOR" != "NOTFOUND" ]; then
     echo "dcmipp found"
     exit 0
