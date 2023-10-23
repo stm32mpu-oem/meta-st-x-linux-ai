@@ -31,7 +31,7 @@ do_install() {
 	install -d ${D}${prefix}/local/demo-ai/image-classification/models/mobilenet/testdata
 
 	# install mobilenet models
-	install -m 0644 ${S}/label*.txt ${D}${prefix}/local/demo-ai/image-classification/models/mobilenet/labels_mobilenet_onnx.txt
+	install -m 0644 ${S}/label*.txt ${D}${prefix}/local/demo-ai/image-classification/models/mobilenet/labels_onnx.txt
 	install -m 0644 ${S}/*.onnx	 ${D}${prefix}/local/demo-ai/image-classification/models/mobilenet/
 }
 

@@ -897,27 +897,6 @@ class Application:
         self.files.pop(index)
         return file_path
 
-    def load_valid_results_from_json_file(self, json_file):
-        """
-        Load json files containing expected results for the validation mode
-        """
-        json_file = json_file + '.json'
-        name = []
-        x0 = []
-        y0 = []
-        x1 = []
-        y1 = []
-        with open(args.image + "/" + json_file) as json_file:
-            data = json.load(json_file)
-            for obj in data['objects_info']:
-                name.append(obj['name'])
-                x0.append(obj['x0'])
-                y0.append(obj['y0'])
-                x1.append(obj['x1'])
-                y1.append(obj['y1'])
-
-        return name, x0, y0, x1, y1
-
     # Updating the labels and the inference infos displayed on the GUI interface - camera input
     def update_label_preview(self):
         """
@@ -1052,7 +1031,9 @@ class Application:
                     self.first_call = False
                 else :
                     self.valid_inference_time.append(round(self.nn_inference_time * 1000, 4))
-                if file_name != str(label):
+                print("name extract from the picture file: {0:32} label {1}".format(file_name, str(label)))
+                if label not in file_name :
+                    print("Inference result mismatch the file name")
                     self.destroy()
                     os._exit(1)
                 # process all the file

@@ -22,6 +22,10 @@ do_install() {
     install -m 0755 ${S}/onnx/launch_python*.sh		           ${D}${prefix}/local/demo-ai/image-classification/onnx
 }
 
+do_install:append:stm32mp25common(){
+    install -m 0755 ${S}/onnx/120-onnx-image-classification-python-mp2.yaml	${D}${prefix}/local/demo/application/120-onnx-image-classification-python.yaml
+}
+
 FILES:${PN} += "${prefix}/local/"
 
 RDEPENDS:${PN} += " \
@@ -31,7 +35,9 @@ RDEPENDS:${PN} += " \
 	python3-pillow \
 	python3-pygobject \
 	python3-onnxruntime \
-	onnx-models-mobilenetv1 \
     application-resources \
 	bash \
 "
+
+RDEPENDS:${PN}:append:stm32mp25common = " onnx-models-mobilenetv3 "
+RDEPENDS:${PN}:append:stm32mp1common  = " onnx-models-mobilenetv1 "
