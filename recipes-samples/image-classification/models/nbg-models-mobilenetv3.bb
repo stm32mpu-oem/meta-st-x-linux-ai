@@ -19,7 +19,7 @@ do_install() {
 	install -d ${D}${prefix}/local/demo-ai/image-classification/models/mobilenet/testdata
 
 	# install mobilenet models
-	install -m 0644 ${S}/labels_mobilenet_nbg.txt ${D}${prefix}/local/demo-ai/image-classification/models/mobilenet/labels_mobilenet_nbg.txt
+	install -m 0644 ${S}/labels_mobilenet_nbg.txt ${D}${prefix}/local/demo-ai/image-classification/models/mobilenet/labels_mobilenet_v3_nbg.txt
 	install -m 0644 ${S}/*.nb 					  ${D}${prefix}/local/demo-ai/image-classification/models/mobilenet/
 }
 

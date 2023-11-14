@@ -1,6 +1,6 @@
 Application:
     Name: Image Classification
-    Description: Mobilenet v1
+    Description: Mobilenet v3
     Icon: ../demo-ai/resources/nbg_cpp.png
     Board:
         List: all

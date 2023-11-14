@@ -55,8 +55,8 @@ RDEPENDS:${PN} += " \
 	libopencv-core \
 	libopencv-imgproc \
 	libopencv-imgcodecs \
-    nbg-models-mobilenetv1 \
     application-resources \
+    nbg-models-mobilenetv3 \
 	bash \
 "
 
