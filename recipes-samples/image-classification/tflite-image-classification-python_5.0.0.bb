@@ -39,7 +39,6 @@ RDEPENDS:${PN} += " \
 	bash \
 "
 
-RDEPENDS:${PN}:append:stm32mp25common = " tflite-vx-delegate "
 RDEPENDS:${PN}:append:stm32mp25common = " tflite-models-mobilenetv3 "
 RDEPENDS:${PN}:append:stm32mp25common = " nbg-models-mobilenetv3 "
 RDEPENDS:${PN}:append:stm32mp1common  = " tflite-models-mobilenetv1 "

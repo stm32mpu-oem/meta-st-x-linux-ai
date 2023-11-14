@@ -40,8 +40,6 @@ RDEPENDS:packagegroup-x-linux-ai-tflite = "\
 "
 
 RDEPENDS:packagegroup-x-linux-ai-tflite:append:stm32mp25common = "\
-    tim-vx \
-    tflite-vx-delegate \
     tflite-pose-estimation-python \
     tflite-semantic-segmentation-python \
 "

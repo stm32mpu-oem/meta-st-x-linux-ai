@@ -171,5 +171,6 @@ FILES:python3-${PN}  = "${PYTHON_SITEPACKAGES_DIR}/tflite_runtime"
 FILES:python3-${PN} += "${PYTHON_SITEPACKAGES_DIR}/tflite_runtime.egg-info"
 
 RDEPENDS:python3-${PN} += " python3-ctypes python3-numpy "
+RDEPENDS:${PN}:append:stm32mp25common = " tflite-vx-delegate "
 
 PROVIDES += "python3-${PN}"

@@ -69,4 +69,3 @@ RDEPENDS:${PN} += " \
 
 #Depending of the Gstreamer version supported by the Yocto version the RDEPENDS differs
 RDEPENDS:${PN} += "${@bb.utils.contains('DISTRO_CODENAME', 'kirkstone', ' gstreamer1.0-plugins-base-videoscale gstreamer1.0-plugins-base-videoconvert ', ' gstreamer1.0-plugins-base-videoconvertscale ',  d)}"
-RDEPENDS:${PN}:append:stm32mp25common = " tflite-vx-delegate "
