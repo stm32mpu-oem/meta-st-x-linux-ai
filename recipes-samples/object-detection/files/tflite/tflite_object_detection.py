@@ -1178,7 +1178,7 @@ class Application:
                       % (expected_count, count))
                 if count != expected_count:
                     print("Inference result not aligned with the expected validation result\n")
-                    os._exit(1)
+                    os._exit(5)
 
                 found = False
                 valid_count = 0
@@ -1194,7 +1194,7 @@ class Application:
 
                 if valid_count != expected_count:
                         print("Inference result not aligned with the expected validation result\n")
-                        os._exit(1)
+                        os._exit(5)
                 else :
                     valid_count = 0
 

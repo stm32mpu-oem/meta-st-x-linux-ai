@@ -546,7 +546,7 @@ static gboolean infer_new_picture(CustomData *data)
 			std::cout << "\texpect " << objects_info.size() << " objects. Object detection inference found " << count << " objects." << std::endl;
 			if (count != objects_info.size()) {
 				std::cout << "Inference result not aligned with the expected validation result\n";
-				exit(1);
+				exit(5);
 			}
 
 			for (unsigned int i = 0; i < objects_info.size(); i++) {
@@ -577,7 +577,7 @@ static gboolean infer_new_picture(CustomData *data)
 				if (objects_info[i].name.compare(labels[results.vect_ObjDetect_Results[i].classe]) != 0) {
 
 					std::cout << "Inference result not aligned with the expected validation result\n";
-					exit(1);
+					exit(5);
 				}
 
 				float error_epsilon = 0.02;
@@ -586,7 +586,7 @@ static gboolean infer_new_picture(CustomData *data)
 				    (fabs(results.vect_ObjDetect_Results[i].location.x1 - objects_info[i].location.x1) > error_epsilon) ||
 				    (fabs(results.vect_ObjDetect_Results[i].location.y1 - objects_info[i].location.y1) > error_epsilon)) {
 					std::cout << "Inference result not aligned with the expected validation result\n";
-					exit(1);
+					exit(5);
 				}
 			}
 			/* Continue over all files */

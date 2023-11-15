@@ -1313,8 +1313,8 @@ class Application:
                 # retreive associated CSV file information
                 seg_map_expected = self.load_valid_results_from_csv_file(input_file)
                 if not(np.array_equal(seg_map_expected,np_array_seg)):
-                    print("Inference result mismatch")
-                    os._exit(1)
+                    print("Inference result mismatch with validation results")
+                    os._exit(5)
                 self.valid_inference_time.append(round(self.nn_inference_time * 1000, 4))
 
                 # process all the file

@@ -572,7 +572,7 @@ static gboolean infer_new_picture(CustomData *data)
 			std::cout << "\texpect " << objects_info.size() << " objects. Object detection inference found " << count << " objects." << std::endl;
 			if (count != objects_info.size()) {
 				std::cout << "Inference result not aligned with the expected validation result\n";
-				exit(1);
+				exit(5);
 			}
 
 			unsigned int valid_count=0;
@@ -586,7 +586,7 @@ static gboolean infer_new_picture(CustomData *data)
 			}
 			if (valid_count != objects_info.size()) {
 				std::cout << "Inference result not aligned with the expected validation result\n";
-				exit(1);
+				exit(5);
 			} else {
 				valid_count =0;
 			}

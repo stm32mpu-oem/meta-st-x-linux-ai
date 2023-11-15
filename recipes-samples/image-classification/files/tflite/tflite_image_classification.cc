@@ -493,7 +493,7 @@ static gboolean infer_new_picture(CustomData *data)
 
 			if (file_name.find(label_sstr.str()) == std::string::npos){
 				std::cout << "Inference result mismatch the file name\n";
-				exit(1);
+				exit(5);
 			}
 
 			/* Continue over all files */

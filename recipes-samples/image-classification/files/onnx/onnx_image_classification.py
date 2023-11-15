@@ -1034,7 +1034,7 @@ class Application:
                 print("name extract from the picture file: {0:32} label {1}".format(file_name, str(label)))
                 if label not in file_name :
                     print("Inference result mismatch the file name")
-                    os._exit(1)
+                    os._exit(5)
                 # process all the file
                 if len(self.files) == 0:
                     avg_inf_time = sum(self.valid_inference_time) / len(self.valid_inference_time)

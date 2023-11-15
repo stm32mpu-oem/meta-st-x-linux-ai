@@ -1164,7 +1164,7 @@ class Application:
                 print("\texpect %s keypoints. NN model inference found %s keypoints" % (expected_key, key_found))
                 if key_found != expected_key :
                     print("Inference result not aligned with the expected validation results\n")
-                    os._exit(1)
+                    os._exit(5)
 
                 found = False
                 valid_count = 0
@@ -1181,7 +1181,7 @@ class Application:
                                        break
                 if (valid_count != expected_key) :
                    print("Inference result not aligned with the expected validation results\n")
-                   os._exit(1)
+                   os._exit(5)
                 valid_count = 0
 
                 # store the inference time in a list so that we can compute the
