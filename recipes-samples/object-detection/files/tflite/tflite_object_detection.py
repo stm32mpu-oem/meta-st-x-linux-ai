@@ -1178,7 +1178,6 @@ class Application:
                       % (expected_count, count))
                 if count != expected_count:
                     print("Inference result not aligned with the expected validation result\n")
-                    self.destroy()
                     os._exit(1)
 
                 found = False
@@ -1195,7 +1194,6 @@ class Application:
 
                 if valid_count != expected_count:
                         print("Inference result not aligned with the expected validation result\n")
-                        self.destroy()
                         os._exit(1)
                 else :
                     valid_count = 0
@@ -1220,7 +1218,6 @@ class Application:
                                        break
                 if (valid_count != expected_count) :
                    print("Inference result not aligned with the expected validation result\n")
-                   self.destroy()
                    os._exit(1)
                 valid_count = 0
 

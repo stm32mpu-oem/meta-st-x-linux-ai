@@ -1034,7 +1034,6 @@ class Application:
                 print("name extract from the picture file: {0:32} label {1}".format(file_name, str(label)))
                 if label not in file_name :
                     print("Inference result mismatch the file name")
-                    self.destroy()
                     os._exit(1)
                 # process all the file
                 if len(self.files) == 0:
