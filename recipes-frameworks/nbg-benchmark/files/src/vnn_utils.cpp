@@ -621,7 +621,7 @@ vx_status vnn_LoadTensorRandom(vx_tensor tensor)
     vx_int32 i=0;
     char dumpInput[128];
 
-    vx_int32 num = vnn_GetTensorSize(tensor);
+    vx_int32 num = vnn_GetTensorBufferSize(tensor);
     vx_uint8 *buf = (vx_uint8*)malloc(num*sizeof(vx_uint8));
     memset(buf, 0, num * sizeof(vx_uint8));
 
