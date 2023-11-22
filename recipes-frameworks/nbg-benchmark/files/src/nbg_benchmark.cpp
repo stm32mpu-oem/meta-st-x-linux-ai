@@ -38,7 +38,7 @@
 
 std::string network_binary_file;
 std::string input_file[MAX_INPUT_COUNT];
-uint64_t case_mac = 0;
+uint64_t case_mmac = 0;
 unsigned int nb_loops = 1;
 
 #define BILLION 1000000000
@@ -55,11 +55,11 @@ static uint64_t get_perf_count()
 static void print_help(int argc, char** argv)
 {
 	std::cout <<
-		"Usage: " << argv[0] << " -m <nbg_file .nb> -i <input_file .tensor/.txt> -c <int case_mac> -l <int nb_loops>\n"
+		"Usage: " << argv[0] << " -m <nbg_file .nb> -i <input_file .tensor/.txt> -c <int case_mmac> -l <int nb_loops>\n"
 		"\n"
 		"-m --nb_file <.nb file path>:               .nb network binary file to be benchmarked.\n"
 		"-i --input_file <.tensor/.txt/ file path>:  Input file to be used for benchmark (maximum 32 input files).\n"
-		"-c --case_mac <int>:                        Theorical value of MAC (Multiply Accu) of the model.\n"
+		"-c --case_mmac <int>:                        Theorical value of MMAC (Million Multiply Accu) of the model.\n"
 		"-l --loops <int>:                           The number of loops of the inference (default loops=1)\n"
 		"--help:                                     Show this help\n";
 	exit(1);
@@ -75,7 +75,7 @@ void process_args(int argc, char** argv)
 	const option long_opts[] = {
 		{"nb_file", required_argument, nullptr, 'm'},
 		{"input_file", optional_argument, nullptr, 'i'},
-		{"case_mac",   optional_argument, nullptr, 'c'},
+		{"case_mmac",   optional_argument, nullptr, 'c'},
 		{"loops",      optional_argument, nullptr, 'l'},
 		{"help",       no_argument,       nullptr, 'h'},
 		{nullptr,      no_argument,       nullptr, 0}
@@ -102,8 +102,8 @@ void process_args(int argc, char** argv)
 			i++;
 			break;
 		case 'c':
-			case_mac = std::stoi(optarg);
-			std::cout << "Info: Using " << case_mac << " as a case MAC for " << network_binary_file << " model." << std::endl;
+			case_mmac = std::stoi(optarg);
+			std::cout << "Info: Using " << case_mmac << " as a case MMAC for " << network_binary_file << " model." << std::endl;
 			break;
 		case 'l':
 			nb_loops = std::stoi(optarg);
@@ -128,10 +128,10 @@ void process_args(int argc, char** argv)
  */
 vx_status vnn_ProcessGraph(vx_graph   graph,
 			   unsigned int loops,
-			   uint64_t case_mac)
+			   uint64_t case_mmac)
 {
 	vx_status   status = VX_FAILURE;
-	uint64_t tmsStart, tmsEnd;
+	uint64_t tStart, tEnd;
 	float msAvg, usAvg;
 	float rUtil = 0, rtime = 0;
 	uint64_t npu_freq;
@@ -153,24 +153,24 @@ vx_status vnn_ProcessGraph(vx_graph   graph,
 	}
 
 	printf("Info: Started running the graph [%d] loops ...\n", loops);
-	if (case_mac == 0){
+	if (case_mmac == 0){
 		std::cout << "Info: No Case MAC has been specified for this model." << std::endl;
 		std::cout << "Info: The MAC Utilization cannot be computed." << std::endl;
 	}
-	tmsStart = get_perf_count();
+	tStart = get_perf_count();
 	for (unsigned int i = 0; i < loops; i++)
 	{
 		status = vxProcessGraph(graph);
 		_CHECK_STATUS(status, exit);
 	}
-	tmsEnd = get_perf_count();
-	msAvg = (float)(tmsEnd - tmsStart) / 1000000 / loops;
-	usAvg = (float)(tmsEnd - tmsStart) / 1000 / loops;
+	tEnd = get_perf_count();
+	msAvg = (float)(tEnd - tStart) / 1000000 / loops;
+	usAvg = (float)(tEnd - tStart) / 1000 / loops;
 
-	if (case_mac != 0){
-		rtime = (float)(tmsEnd - tmsStart) / 1000000000 / loops;
-		rUtil = case_mac * 1000000 / ((float)((VIP_MAC * npu_freq)) * rtime);
-		printf("Info: MAC utilization is %.2f%% with caseMAC set to %ld Million of MAC\n", rUtil*100, case_mac);
+	if (case_mmac != 0){
+		rtime = (float)(tEnd - tStart) / 1000000000 / loops;
+		rUtil = case_mmac * 1000000 / ((float)((VIP_MAC * npu_freq)) * rtime);
+		printf("Info: MAC utilization is %.2f%% with caseMAC set to %ld Million of MAC\n", rUtil*100, case_mmac);
 	}
 	printf("Info: Loop:%d,Average: %.2f ms or %.2f us\n", loops, msAvg, usAvg);
 exit:
@@ -199,7 +199,7 @@ int main(int argc, char **argv){
 	vx_int32 input_count  = 0;
 	vx_int32 output_count = 0;
 
-	uint64_t tmsStart, tmsEnd, msVal, usVal;
+	uint64_t tStart, tEnd, msVal, usVal;
 	int ret;
 
 	ZEROS(inputs_param);
@@ -236,12 +236,12 @@ int main(int argc, char **argv){
 	}
 
 	std::cout << "Info: Verifying graph..." << std::endl;
-	tmsStart = get_perf_count();
+	tStart = get_perf_count();
 	status = vxVerifyGraph(graph);
 	_CHECK_STATUS(status, exit);
-	tmsEnd = get_perf_count();
-	msVal = (tmsEnd - tmsStart)/1000000;
-	usVal = (tmsEnd - tmsStart)/1000;
+	tEnd = get_perf_count();
+	msVal = (tEnd - tStart)/1000000;
+	usVal = (tEnd - tStart)/1000;
 	printf("Info: Verifying graph took: %ldms or %ldus\n", msVal, usVal);
 
 	if (input_file[0].empty()) {
@@ -256,7 +256,7 @@ int main(int argc, char **argv){
 		}
 	}
 
-	ret = vnn_ProcessGraph(graph, nb_loops, case_mac);
+	ret = vnn_ProcessGraph(graph, nb_loops, case_mmac);
 
 	for(int j = 0;j < output_count;j++) {
 		char filename[128];
