@@ -24,6 +24,7 @@ import argparse
 import signal
 import os
 import random
+import time
 import json
 import subprocess
 import re
@@ -83,9 +84,19 @@ class NeuralNetwork:
         self._input_std = input_std
         self._floating_model = False
         self.maximum_detection = maximum_detection
-        self.nn_result_locations = np.reshape(np.zeros((args.maximum_detection, 4)), (1, 10, 4))
-        self.nn_result_classes = np.reshape(np.zeros(args.maximum_detection), (1, 10))
-        self.nn_result_scores = np.reshape(np.zeros(args.maximum_detection), (1, 10))
+        self.nn_result_boxes = []
+        self.nn_result_classes = []
+        self.nn_result_scores = []
+        self.model_yolo = False
+        self.model_ssd_mobilenet = False
+        self.number_of_boxes = 0
+
+        if self._model_file.find('yolo') != -1:
+            self.model_yolo = True
+            self.model_ssd_mobilenet = False
+        else:
+            self.model_yolo = False
+            self.model_ssd_mobilenet = True
 
         if npu is True:
             if path.exists(LIBVX_PATH) :
@@ -128,11 +139,20 @@ class NeuralNetwork:
                 print("No delegate ",ext_delegate, "found fall back on CPU mode")
 
         if self._selected_delegate is not None:
-            print('Loading external delegate from {}'.format(self._selected_delegate))
-            print("number of threads used in tflite interpreter : ",self.number_threads)
-            self._interpreter = tflr.Interpreter(model_path=self._model_file,
-                                                 num_threads = self.number_threads,
-                                                 experimental_delegates=[tflr.load_delegate(self._selected_delegate)])
+            if self.model_yolo :
+                vx_delegate = tflr.load_delegate( library=self._selected_delegate,
+                                                    options={"cache_file_path": "/usr/local/demo-ai/object-detection/models/yolov4-tiny/yolov4_tiny_416_quant.nb", "allowed_cache_mode":"true"})
+                print('Loading external delegate from {}'.format(self._selected_delegate))
+                print("number of threads used in tflite interpreter : ",self.number_threads)
+                self._interpreter = tflr.Interpreter(model_path=self._model_file,
+                                                    num_threads = self.number_threads,
+                                                    experimental_delegates=[vx_delegate])
+            else :
+                print('Loading external delegate from {}'.format(self._selected_delegate))
+                print("number of threads used in tflite interpreter : ",self.number_threads)
+                self._interpreter = tflr.Interpreter(model_path=self._model_file,
+                                                    num_threads = self.number_threads,
+                                                    experimental_delegates=[tflr.load_delegate(self._selected_delegate)])
         else :
             print("no delegate to use, CPU mode activated")
             print("number of threads used in tflite interpreter : ",self.number_threads)
@@ -149,6 +169,8 @@ class NeuralNetwork:
             print("Floating point Tensorflow Lite Model")
 
         self._labels = load_labels(self._label_file)
+        if self.model_yolo:
+            self.yolov4_tiny_parameters()
 
     def __getstate__(self):
         return (self._model_file, self._label_file, self._input_mean,
@@ -186,47 +208,234 @@ class NeuralNetwork:
         This method launches inference using the invoke call
         :param img: the image to be inferred
         """
-        # add N dim
-        input_data = np.expand_dims(img, axis=0)
+
 
         if self._floating_model:
-            input_data = (np.float32(input_data) - self._input_mean) / self._input_std
+             input_data = (np.float32(input_data) - self._input_mean) / self._input_std
+        else :
+            # add N dim
+            input_data = np.expand_dims(img, axis=0)
 
         self._interpreter.set_tensor(self._input_details[0]['index'], input_data)
+        start = timer()
         self._interpreter.invoke()
+        end = timer()
+        inference_time = end - start
+        return inference_time
+
+    def math_sigmoid(self,x):
+        return 1 / (1 + np.exp(-x))
+
+    def inverse_sigmoid(self,x):
+        return -np.log(1 / x - 1)
+
+    def yolov4_tiny_parameters(self):
+        #define NN properties :
+        #extracted from yolov4 config file
+        self.anchors_list = [[[81, 82], [135, 169], [344, 319]], [[23, 27], [37, 58], [81, 82]]]
+        self.scale_x_y = [1.05, 1.05]
+        self.anchors_size = 3
+        #stride = NN input size / NN output size => 416/13 = 32 416/26 = 16
+        self.strides = [32, 16]
+        input_h , input_w, input_c = self.get_img_size()
+
+        self.grid_size_list = []
+        for stride in self.strides :
+            size = int(input_w / stride)
+            self.grid_size_list.append(size)
+
+    def intersection(self, rect1, rect2):
+        """
+        This method return the intersection of two rectangles
+        """
+        rect1_x1,rect1_y1,rect1_x2,rect1_y2 = rect1[:4]
+        rect2_x1,rect2_y1,rect2_x2,rect2_y2 = rect2[:4]
+        x1 = max(rect1_x1,rect2_x1)
+        y1 = max(rect1_y1,rect2_y1)
+        x2 = min(rect1_x2,rect2_x2)
+        y2 = min(rect1_y2,rect2_y2)
+        return (x2-x1)*(y2-y1)
+
+    def union(self, rect1,rect2):
+        """
+        This method return the union of two rectangles
+        """
+        rect1_x1,rect1_y1,rect1_x2,rect1_y2 = rect1[:4]
+        rect2_x1,rect2_y1,rect2_x2,rect2_y2 = rect2[:4]
+        rect1_area = (rect1_x2-rect1_x1)*(rect1_y2-rect1_y1)
+        rect2_area = (rect2_x2-rect2_x1)*(rect2_y2-rect2_y1)
+        return rect1_area + rect2_area - self.intersection(rect1,rect2)
+
+    def iou(self, rect1,rect2):
+        """
+        This method compute IoU
+        """
+        return self.intersection(rect1,rect2)/self.union(rect1,rect2)
+
+    def filter_prediction(self,conf_threshold,NN_outputs):
+        confidence_score = NN_outputs[...,4]
+        filtered_list = []
+        for i in range(confidence_score.size):
+            if confidence_score[i] > self.inverse_sigmoid(conf_threshold):
+                filtered_list.append(i)
+        return filtered_list
+
 
     def get_results(self):
-        # display output results
-        locations = self._interpreter.get_tensor(self._output_details[0]['index'])
-        classes   = self._interpreter.get_tensor(self._output_details[1]['index'])
-        scores    = self._interpreter.get_tensor(self._output_details[2]['index'])
-        return (locations, classes, scores)
+
+        if self.model_yolo:
+            #yolov4-tiny used
+            output_0 = self._interpreter.get_tensor(self._output_details[0]['index'])
+            output_1 = self._interpreter.get_tensor(self._output_details[1]['index'])
+            outputs = [output_0,output_1]
+            locations, scores, classes = self.post_process_prediction(outputs)
+            objects_list = []
+            sorted_objects_list = []
+            iou_thresh = args.iou_threshold
+            number_boxes_detected = np.shape(locations)
+            number_boxes_detected = number_boxes_detected[0]
+            for i in range(number_boxes_detected):
+                x1 = locations[i][0]
+                x2 = locations[i][2]
+                y1 = locations[i][1]
+                y2 = locations[i][3]
+                class_id = classes[i]
+                confidence = scores[i]
+                objects_list.append([x1,y1,x2,y2,class_id,confidence])
+
+            objects_list.sort(key=lambda x: x[5], reverse=True)
+
+            while len(objects_list)>0:
+                sorted_objects_list.append(objects_list[0])
+                objects_list = [objects for objects in objects_list if self.iou(objects,objects_list[0])<iou_thresh]
+            filtered_locations = np.zeros((len(sorted_objects_list),4))
+            filtered_classes = np.zeros((len(sorted_objects_list),1))
+            filtered_scores = np.zeros((len(sorted_objects_list),1))
+            for i in range(len(sorted_objects_list)):
+                    filtered_locations[i][0] = sorted_objects_list[i][0]
+                    filtered_locations[i][1] = sorted_objects_list[i][1]
+                    filtered_locations[i][2] = sorted_objects_list[i][2]
+                    filtered_locations[i][3] = sorted_objects_list[i][3]
+                    filtered_classes[i] = sorted_objects_list[i][4]
+                    filtered_scores[i] = sorted_objects_list[i][5]
+            self.number_of_boxes = len(filtered_locations)
+        elif self.model_ssd_mobilenet :
+            #coco_ssd_mobilenet used
+            filtered_locations = self._interpreter.get_tensor(self._output_details[0]['index'])
+            filtered_classes   = self._interpreter.get_tensor(self._output_details[1]['index'])
+            filtered_scores    = self._interpreter.get_tensor(self._output_details[2]['index'])
+            number_of_boxes = np.shape(filtered_scores)
+            self.number_of_boxes = number_of_boxes[1]
+
+        return (filtered_locations, filtered_scores, filtered_classes)
+
+    def post_process_prediction(self,yolo_output):
+
+        #define NN outputs list
+        locations = []
+        scores = []
+        classes = []
+
+        for i , output in enumerate(yolo_output):
+
+            #format outputs :
+            # i index of the NN output / output is the values of the NN output[i]
+            # yolov4 model is composed of two outputs different
+            # first output shape is (13,13,255) second is (26,26,255)
+            # 255 values correspond to three bounding boxes one per anchor.
+            # Each bounding boxes is composed of 85 values,
+            # x, y, w, h, confidence, and 80 values for coco classes
+
+            #output_0 reshaped => 13*13*3 = 507 bounding boxes of 85 values => (507,85)
+            #output_1 reshaped => 26*26*3 = 2028 bounding boxes of 85 values => (2028,85)
+            output_shape = ((self.grid_size_list[i] * self.grid_size_list[i] * self.anchors_size),85)
+            outputs = np.reshape(output,output_shape)
+
+            #To reduce post-process computation time we should parse only bounding boxes with
+            #a confidence score over the confidence threshold set by the user
+            #filtered_results is a list of index of bb with a good threshold
+
+            filtered_results = self.filter_prediction(args.conf_threshold,outputs)
+
+            if filtered_results:
+
+                bounding_boxes = outputs[filtered_results]
+                bb_coordinates = bounding_boxes[:,:2]
+                bb_width = bounding_boxes[:,2:3]
+                bb_height = bounding_boxes[:,3:4]
+                bb_score = bounding_boxes[:,4:5]
+                bb_classe = bounding_boxes[:,5:]
+
+                #recover score using sigmoid
+                scores.append(self.math_sigmoid(bb_score))
+
+                #recover best class for each bounding box
+                classes.append(np.argmax(bb_classe,axis=1))
+
+                #recover bb coordinates
+                #the center coordinates of boxes are relative to filter application using sigmoid function
+                #determine grid offset cx and cy
+                bb_grid_position = np.array(filtered_results) // self.anchors_size
+                cx = bb_grid_position // self.grid_size_list[i]
+                cy = bb_grid_position %  self.grid_size_list[i]
+
+                offset = []
+                for k in range(len(cx)):
+                    offset.append((cy[k],cx[k]))
+                offset = np.array(offset)
+                stride = self.strides[i]
+                center_coordinates = self.math_sigmoid(bb_coordinates * self.scale_x_y[i]) - 0.5 * (self.scale_x_y[i] - 1)
+                center_coordinates = (center_coordinates+offset)*stride
+
+                #width and height of boxes are predicted as offsets from cluster centroids
+                anchor = np.array(self.anchors_list[i])
+                bb_anchors = anchor[(np.array(filtered_results) % self.anchors_size)]
+                width = np.exp(bb_width)
+                height = np.exp(bb_height)
+                for j in range(len(width)):
+                    width[j][0] = width[j][0] * bb_anchors[j][0]
+                    height[j][0] = height[j][0] * bb_anchors[j][1]
+
+                #create location output
+                #location of a box = (x0,y0,x1,y1) => (x0,y0) top left corner / (x1,y1) bottom right corner
+                #locations = (1,number_of_bb,(x0,y0,x1,y1))
+                number_of_bb = len(center_coordinates)
+                coordinates = []
+                for k in range(number_of_bb):
+                    x0 =  center_coordinates[k][0] - width[k][0]/2
+                    y0 =  center_coordinates[k][1] - height[k][0]/2
+                    x1 =  center_coordinates[k][0] + width[k][0]/2
+                    y1 =  center_coordinates[k][1] + height[k][0]/2
+                    coordinates.append((x0,y0,x1,y1))
+                locations.append(coordinates)
+
+        if len(locations) > 0:
+            locations = np.concatenate(locations, axis=0)
+            scores = np.concatenate(scores, axis=0)[:, 0]
+            classes = np.concatenate(classes, axis=0)
+
+            return locations, scores, classes
+        else:
+            return np.zeros((0, 4)), np.zeros((0)), np.zeros((0))
 
     def get_object_location_y0(self, idx):
-        if idx < self.maximum_detection:
-            return round(float(self.nn_result_locations[0][idx][0]), 9)
-        return 0
+        return round(float(self.nn_result_locations[0][idx][0]), 9)
 
     def get_object_location_x0(self, idx):
-        if idx < self.maximum_detection:
-            return round(float(self.nn_result_locations[0][idx][1]), 9)
-        return 0
+        return round(float(self.nn_result_locations[0][idx][1]), 9)
 
     def get_object_location_y1(self, idx):
-        if idx < self.maximum_detection:
-            return round(float(self.nn_result_locations[0][idx][2]), 9)
-        return 0
+        return round(float(self.nn_result_locations[0][idx][2]), 9)
 
     def get_object_location_x1(self, idx):
-        if idx < self.maximum_detection:
-            return round(float(self.nn_result_locations[0][idx][3]), 9)
-        return 0
+        return round(float(self.nn_result_locations[0][idx][3]), 9)
 
     def get_label(self, idx):
         labels = self.get_labels()
-        if idx < self.maximum_detection:
+        if self.model_yolo:
+            return labels[int(self.nn_result_classes[idx])]
+        elif self.model_ssd_mobilenet:
             return labels[int(self.nn_result_classes[0][idx])]
-        return 0
 
 class GstWidget(Gtk.Box):
     """
@@ -420,12 +629,9 @@ class GstWidget(Gtk.Box):
             self.cpt_frame += 1
             if self.cpt_frame == 30:
                 self.cpt_frame = 0
-            start_time = timer()
-            self.nn.launch_inference(arr)
-            stop_time = timer()
-            self.app.nn_inference_time = stop_time - start_time
+            self.app.nn_inference_time = self.nn.launch_inference(arr)
             self.app.nn_inference_fps = (1000/(self.app.nn_inference_time*1000))
-            self.app.nn.nn_result_locations[:, :, :], self.app.nn.nn_result_classes[:, :], self.app.nn.nn_result_scores[:, :] = self.nn.get_results()
+            self.app.nn.nn_result_locations, self.app.nn.nn_result_scores, self.app.nn.nn_result_classes = self.nn.get_results()
             struc = Gst.Structure.new_empty("inference-done")
             msg = Gst.Message.new_application(None, struc)
             self.bus.post(msg)
@@ -567,7 +773,7 @@ class MainWindow(Gtk.Window):
             info_sstr = "  inf.fps :     " + "\n" + "  inf.time :     " + "\n"
             self.inf_time.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>%s\n</b></span>" % (self.ui_cairo_font_size,info_sstr))
 
-                # setup video box containing gst stream in camera previex mode
+        # setup video box containing gst stream in camera previex mode
         # and a openCV picture in still picture mode
         # An overlay is used to keep a gtk drawing area on top of the video stream
         self.video_box = Gtk.HBox()
@@ -637,6 +843,14 @@ class OverlayWindow(Gtk.Window):
         """
         self.destroy()
         Gtk.main_quit()
+
+    def bboxes_colors(self):
+        bbcolor_list = []
+        labels = self.app.nn.get_labels()
+        for i in range(len(labels)):
+            bbcolor = (random.random(), random.random(), random.random())
+            bbcolor_list.append(bbcolor)
+        return bbcolor_list
 
     def set_ui_param(self):
         """
@@ -793,6 +1007,7 @@ class OverlayWindow(Gtk.Window):
             self.drawing_width = widget.get_allocated_width()
             self.drawing_height = widget.get_allocated_height()
             cr.set_font_size(self.ui_cairo_font_size_label)
+            self.bbcolor_list = self.bboxes_colors()
             self.boxes_printed = True
             if self.app.enable_camera_preview == False :
                 self.app.still_picture_next = True
@@ -825,55 +1040,68 @@ class OverlayWindow(Gtk.Window):
                 preview_ratio = float(args.frame_width)/float(args.frame_height)
                 preview_height = self.drawing_height
                 preview_width =  preview_ratio * preview_height
-                if preview_width >= self.drawing_width:
-                   offset = 0
-                   preview_width = self.drawing_width
-                   preview_height = preview_width / preview_ratio
-                   vertical_offset = (self.drawing_height - preview_height)/2
-                else :
-                    offset = (self.drawing_width - preview_width)/2
-                    vertical_offset = 0
             else :
                 preview_width = self.app.frame_width
                 preview_height = self.app.frame_height
                 preview_ratio = preview_width / preview_height
-                offset = int((self.drawing_width - preview_width)/2)
+
+            if preview_width >= self.drawing_width:
+                offset = 0
+                preview_width = self.drawing_width
+                preview_height = preview_width / preview_ratio
                 vertical_offset = (self.drawing_height - preview_height)/2
+            else :
+                offset = (self.drawing_width - preview_width)/2
+                vertical_offset = 0
 
             if args.validation:
                     self.app.still_picture_next = True
 
-            # draw rectangle around the 5 first detected object with a score greater
-            # than the value determined in the threshold argument
-            MAX_PRINTED_BOXES = int((args.maximum_detection)/2)
-            cr.set_font_size(self.ui_cairo_font_size_label)
-            for i in range (MAX_PRINTED_BOXES):
-                if i == 0:
-                    cr.set_source_rgb(1, 0, 0)
-                elif i == 1:
-                    cr.set_source_rgb(0, 1, 0)
-                elif i == 2:
-                    cr.set_source_rgb(0, 0, 1)
-                elif i == 3:
-                    cr.set_source_rgb(0.5, 0.5, 0)
-                elif i == 4:
-                    cr.set_source_rgb(0.5, 0, 0.5)
-                if self.app.nn.nn_result_scores[0][i] > args.threshold:
-                    y0 = int(self.app.nn.get_object_location_y0(i) * preview_height)
-                    x0 = int(self.app.nn.get_object_location_x0(i) * preview_width)
-                    y1 = int(self.app.nn.get_object_location_y1(i) * preview_height)
-                    x1 = int(self.app.nn.get_object_location_x1(i) * preview_width)
-                    x = x0 + offset
-                    y = y0 + vertical_offset
-                    width = (x1 - x0)
-                    height = (y1 - y0)
-                    label = self.app.nn.get_label(i)
-                    accuracy = self.app.nn.nn_result_scores[0][i] * 100
-                    cr.rectangle(int(x),int(y),width,height)
-                    cr.stroke()
-                    cr.move_to(x , (y - (self.ui_cairo_font_size/2)))
-                    text_to_display = label + " " + str(int(accuracy)) + "%"
-                    cr.show_text(text_to_display)
+            cr.set_line_width(4)
+            cr.set_font_size(self.ui_cairo_font_size)
+
+            for i in range(self.app.nn.number_of_boxes):
+                if self.app.nn.model_yolo:
+                    bboxe = self.app.nn.nn_result_locations[i]
+                    bboxe /= self.app.nn_input_width
+                    bboxe *= np.array([preview_width, preview_height, preview_width,preview_height])
+                    y0 = int(bboxe[1])
+                    x0 = int(bboxe[0])
+                    y1 = int(bboxe[3])
+                    x1 = int(bboxe[2])
+                    accuracy = self.app.nn.nn_result_scores[i] * 100
+                    color_idx = int(self.app.nn.nn_result_classes[i])
+                elif self.app.nn.model_ssd_mobilenet :
+                    if self.app.nn.nn_result_scores[0][i] > args.conf_threshold:
+                        y0 = int(self.app.nn.get_object_location_y0(i) * preview_height)
+                        x0 = int(self.app.nn.get_object_location_x0(i) * preview_width)
+                        y1 = int(self.app.nn.get_object_location_y1(i) * preview_height)
+                        x1 = int(self.app.nn.get_object_location_x1(i) * preview_width)
+                        accuracy = self.app.nn.nn_result_scores[0][i] * 100
+                        color_idx = int(self.app.nn.nn_result_classes[0][i])
+                    else :
+                        break
+                if x0 < 0 :
+                    x0 = 0
+                if x0 > preview_width :
+                    x0 = preview_width
+                if x1 < 0 :
+                    x1 = 0
+                if x1 > preview_width :
+                    x1 = preview_width
+
+                x = x0 + offset
+                y = y0 + vertical_offset
+
+                width = (x1 - x0)
+                height = (y1 - y0)
+                label = self.app.nn.get_label(i)
+                cr.set_source_rgb(self.bbcolor_list[color_idx][0],self.bbcolor_list[color_idx][1],self.bbcolor_list[color_idx][2])
+                cr.rectangle(int(x),int(y),width,height)
+                cr.stroke()
+                cr.move_to(x , (y - (self.ui_cairo_font_size/2)))
+                text_to_display = label + " " + str(int(accuracy)) + "%"
+                cr.show_text(text_to_display)
         return True
 
     def still_picture(self,  widget, event):
@@ -1033,13 +1261,20 @@ class Application:
         y1 = []
         with open(args.image + "/" + json_file) as json_file:
             data = json.load(json_file)
-            for obj in data['objects_info']:
-                name.append(obj['name'])
-                x0.append(obj['x0'])
-                y0.append(obj['y0'])
-                x1.append(obj['x1'])
-                y1.append(obj['y1'])
-
+            if self.nn.model_ssd_mobilenet :
+                for obj in data['objects_info']:
+                    name.append(obj['name'])
+                    x0.append(obj['x0'])
+                    y0.append(obj['y0'])
+                    x1.append(obj['x1'])
+                    y1.append(obj['y1'])
+            elif self.nn.model_yolo :
+                for obj in data['objects_info_yolo']:
+                    name.append(obj['name'])
+                    x0.append(obj['x0'])
+                    y0.append(obj['y0'])
+                    x1.append(obj['x1'])
+                    y1.append(obj['y1'])
         return name, x0, y0, x1, y1
 
     # Updating the labels and the inference infos displayed on the GUI interface - camera input
@@ -1109,6 +1344,7 @@ class Application:
             return False
 
         if self.still_picture_next and self.overlay_window.boxes_printed:
+
             # get randomly a picture in the directory
             rfile = self.getRandomFile(args.image)
             img = Image.open(args.image + "/" + rfile)
@@ -1116,7 +1352,7 @@ class Application:
             # recover drawing box size and picture size
             screen_width = self.overlay_window.drawing_width
             screen_height = self.overlay_window.drawing_height
-            picture_width, picture_height = img.size
+            picture_width, picture_height  = img.size
 
             #adapt the frame to the screen with with the preservation of the aspect ratio
             width_ratio = float(screen_width/picture_width)
@@ -1139,13 +1375,11 @@ class Application:
 
             # execute the inference
             nn_frame = cv2.resize(np.array(img), (self.nn_input_width, self.nn_input_height))
-            start_time = timer()
-            self.nn.launch_inference(nn_frame)
-            stop_time = timer()
+
+            self.nn_inference_time = self.nn.launch_inference(nn_frame)
             self.still_picture_next = False
-            self.nn_inference_time = stop_time - start_time
             self.nn_inference_fps = (1000/(self.nn_inference_time*1000))
-            self.nn.nn_result_locations[:, :, :], self.nn.nn_result_classes[:, :], self.nn.nn_result_scores[:, :] = self.nn.get_results()
+            self.nn.nn_result_locations, self.nn.nn_result_scores, self.nn.nn_result_classes = self.nn.get_results()
 
             # write information on the GTK UI
             inference_time = self.nn_inference_time * 1000
@@ -1166,16 +1400,27 @@ class Application:
                 # retreive associated JSON file information
                 expected_label, expected_x0, expected_y0, expected_x1, expected_y1 = self.load_valid_results_from_json_file(file_name_no_ext)
 
-                # count number of object above 60% and compare it with he expected
+                # count number of object above conf_threshold and compare it with he expected
                 # validation result
                 count = 0
-                for i in range(0, 5):
-                    if self.nn.nn_result_scores[0][i] > args.threshold:
-                        count = count + 1
+                expected_count = 0
+                for i in range(self.nn.number_of_boxes):
+                    if self.nn.model_ssd_mobilenet:
+                        if self.nn.nn_result_scores[0][i] > args.conf_threshold:
+                            count = count + 1
+                    elif self.nn.model_yolo:
+                        if self.nn.nn_result_scores[i] > args.conf_threshold:
+                            count = count + 1
 
-                expected_count = len(expected_label)
-                print("\texpect %s objects. Object detection inference found %s objects"
-                      % (expected_count, count))
+                if len(expected_label) == 1 :
+                    if expected_label[0] == "":
+                        expected_count = 0
+                    else :
+                        expected_count = len(expected_label)
+                else :
+                    expected_count = len(expected_label)
+
+                print("\texpect %s objects. Object detection inference found %s objects" % (expected_count, count))
                 if count != expected_count:
                     print("Inference result not aligned with the expected validation result\n")
                     os._exit(5)
@@ -1193,29 +1438,38 @@ class Application:
                                 break
 
                 if valid_count != expected_count:
-                        print("Inference result not aligned with the expected validation result\n")
+                        print("Inference result label not aligned with the expected validation result\n")
                         os._exit(5)
                 else :
                     valid_count = 0
 
                 for i in range(0, count):
+                    if self.nn.model_yolo:
+                        validation_bboxe = self.nn.nn_result_locations[i]
+                        nm_validation_bb = validation_bboxe/self.nn_input_width
+                        nn_y0 = nm_validation_bb[1]
+                        nn_x0 = nm_validation_bb[0]
+                        nn_y1 = nm_validation_bb[3]
+                        nn_x1 = nm_validation_bb[2]
+                    elif self.nn.model_ssd_mobilenet :
+                        if self.nn.nn_result_scores[0][i] > args.conf_threshold:
+                            nn_y0 = self.nn.get_object_location_y0(i)
+                            nn_x0 = self.nn.get_object_location_x0(i)
+                            nn_y1 = self.nn.get_object_location_y1(i)
+                            nn_x1 = self.nn.get_object_location_x1(i)
+                    label = self.nn.get_label(i)
                     for j in range(0,expected_count):
-                            label = self.nn.get_label(i)
-                            x0 = self.nn.get_object_location_x0(i)
-                            y0 = self.nn.get_object_location_y0(i)
-                            x1 = self.nn.get_object_location_x1(i)
-                            y1 = self.nn.get_object_location_y1(i)
-                            error_epsilon = 0.02
-                            if abs(x0 - float(expected_x0[j])) <= error_epsilon or \
-                               abs(y0 - float(expected_y0[j])) <= error_epsilon or \
-                               abs(x1 - float(expected_x1[j])) <= error_epsilon or \
-                               abs(y1 - float(expected_y1[j])) <= error_epsilon:
-                                   found = True
-                                   if found :
-                                       valid_count += 1
-                                       found = False
-                                       print("\t{0:12} (x0 y0 x1 y1) {1:12}{2:12}{3:12}{4:12}  expected result: {5:12} (x0 y0 x1 y1) {6:12}{7:12}{8:12}{9:12}".format(label, x0, y0, x1, y1, expected_label[j], expected_x0[j], expected_y0[j], expected_x1[j], expected_y1[j]))
-                                       break
+                        error_epsilon = 0.02
+                        if abs(nn_x0 - float(expected_x0[j])) <= error_epsilon and \
+                            abs(nn_y0 - float(expected_y0[j])) <= error_epsilon and \
+                            abs(nn_x1 - float(expected_x1[j])) <= error_epsilon and \
+                            abs(nn_y1 - float(expected_y1[j])) <= error_epsilon:
+                            found = True
+                            if found :
+                                valid_count += 1
+                                found = False
+                                print("\t{0:12} (x0 y0 x1 y1) {1:12}{2:12}{3:12}{4:12}  expected result: {5:12} (x0 y0 x1 y1) {6:12}{7:12}{8:12}{9:12}".format(label, round(nn_x0,3), round(nn_y0,3), round(nn_x1,3), round(nn_y1,3), expected_label[j], round(float(expected_x0[j]),3), round(float(expected_y0[j]),3), round(float(expected_x1[j]),3), round(float(expected_y1[j]),3)))
+                                break
                 if (valid_count != expected_count) :
                    print("Inference result not aligned with the expected validation result\n")
                    os._exit(1)
@@ -1286,7 +1540,8 @@ if __name__ == '__main__':
     parser.add_argument("--val_run", default=50, help="set the number of draws in the validation mode")
     parser.add_argument("--num_threads", default=None, help="Select the number of threads used by tflite interpreter to run inference")
     parser.add_argument("--maximum_detection", default=10, type=int, help="Adjust the maximum number of object detected in a frame accordingly to your NN model (default is 10)")
-    parser.add_argument("--threshold", default=0.60, type=float, help="threshold of accuracy above which the boxes are displayed (default 0.60)")
+    parser.add_argument("--conf_threshold", default=0.60, type=float, help="threshold of accuracy above which the boxes are displayed (default 0.50)")
+    parser.add_argument("--iou_threshold", default=0.40, type=float, help="threshold of intersection over union above which the boxes are displayed (default 0.30)")
     args = parser.parse_args()
 
     try:
