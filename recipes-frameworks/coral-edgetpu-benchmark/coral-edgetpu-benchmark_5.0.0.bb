@@ -33,4 +33,5 @@ INSANE_SKIP:${PN} = "ldflags"
 
 RDEPENDS:${PN} += " \
 	libedgetpu \
+    x-linux-ai-benchmark \
 "

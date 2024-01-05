@@ -168,4 +168,5 @@ FILES:${PYTHON_PN}-${PN} = "${PYTHON_SITEPACKAGES_DIR}/onnxruntime/*"
 
 # onnxruntime_test_python.py unitary test requires python3-numpy and python3-onnxruntime packages
 RDEPENDS:${PN}-unit-tests += "${PYTHON_PN}-${PN}"
+RDEPENDS:${PN} += " x-linux-ai-benchmark "
 RDEPENDS:${PYTHON_PN}-${PN} += "${PYTHON_PN} ${PYTHON_PN}-numpy"

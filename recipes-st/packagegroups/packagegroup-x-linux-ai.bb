@@ -33,6 +33,7 @@ RDEPENDS:packagegroup-x-linux-ai-tflite = "\
     tensorflow-lite-tools \
     tensorflow-lite \
     x-linux-ai-tool \
+    x-linux-ai-benchmark \
     tflite-image-classification-cpp \
     tflite-image-classification-python \
     tflite-object-detection-cpp \
@@ -52,6 +53,7 @@ RDEPENDS:packagegroup-x-linux-ai-coral = "\
     python3-tensorflow-lite \
     tensorflow-lite \
     x-linux-ai-tool \
+    x-linux-ai-benchmark \
     coral-edgetpu-benchmark \
     coral-image-classification-cpp \
     coral-image-classification-python \
@@ -65,6 +67,7 @@ RDEPENDS:packagegroup-x-linux-ai-onnxruntime = "\
     onnxruntime-tools \
     python3-onnxruntime \
     x-linux-ai-tool \
+    x-linux-ai-benchmark \
     onnx-models-mobilenetv1 \
     onnx-models-coco-ssd-mobilenetv1 \
     onnx-image-classification-python \
@@ -79,4 +82,5 @@ RDEPENDS:packagegroup-x-linux-ai-npu += "\
     nbg-benchmark \
     nbg-image-classification-cpp \
     nbg-models-mobilenetv3 \
+    x-linux-ai-benchmark \
 "
